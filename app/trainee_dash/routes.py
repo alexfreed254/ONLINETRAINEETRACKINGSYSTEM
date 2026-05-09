@@ -1,19 +1,29 @@
-from flask import render_template, session, redirect, url_for, flash, request, jsonify
+from flask import render_template, session, redirect, url_for, flash, request
 from app.trainee_dash import trainee_dash
 from app.auth.routes import trainee_required
 from app.supabase_client import get_supabase, get_supabase_admin
-from datetime import datetime
 
 
 def _get_trainee(user_id):
-    """Fetch trainee record for the logged-in user."""
-    sb = get_supabase()
+    """Fetch trainee record using admin client (bypasses RLS)."""
     try:
-        return sb.table('trainees').select(
+        sb = get_supabase_admin()
+        result = sb.table('trainees').select(
             '*, profiles(*), courses(*), departments(*)'
-        ).eq('profile_id', user_id).single().execute().data
+        ).eq('profile_id', user_id).single().execute()
+        return result.data
     except Exception:
         return None
+
+
+def _trainee_not_found():
+    """Show a friendly error instead of logging the user out."""
+    flash(
+        'Your trainee profile was not found. '
+        'Please contact the institute to complete your registration.',
+        'warning'
+    )
+    return render_template('trainee_dash/no_profile.html'), 200
 
 
 # ─────────────────────────────────────────────
@@ -24,47 +34,35 @@ def _get_trainee(user_id):
 @trainee_required
 def index():
     user = session.get('user')
-    sb = get_supabase()
     trainee = _get_trainee(user['id'])
 
     if not trainee:
-        flash('Trainee profile not found. Contact your institute.', 'warning')
-        return redirect(url_for('auth.logout'))
+        return _trainee_not_found()
 
-    stats = {}
+    stats = {
+        'total_media': 0, 'approved_media': 0, 'pending_media': 0,
+        'verified_skills': 0, 'internships': 0, 'attendance_rate': 0
+    }
     recent_media = []
     academic = []
     internships = []
 
     try:
+        sb = get_supabase_admin()
         tid = trainee['id']
 
-        media_resp = sb.table('media_uploads').select('id', count='exact').eq('trainee_id', tid).execute()
-        stats['total_media'] = media_resp.count or 0
+        stats['total_media'] = sb.table('media_uploads').select('id', count='exact').eq('trainee_id', tid).execute().count or 0
+        stats['approved_media'] = sb.table('media_uploads').select('id', count='exact').eq('trainee_id', tid).eq('approval_status', 'approved').execute().count or 0
+        stats['pending_media'] = sb.table('media_uploads').select('id', count='exact').eq('trainee_id', tid).eq('approval_status', 'pending').execute().count or 0
+        stats['verified_skills'] = sb.table('trainee_competencies').select('id', count='exact').eq('trainee_id', tid).eq('status', 'verified').execute().count or 0
+        stats['internships'] = sb.table('internships').select('id', count='exact').eq('trainee_id', tid).execute().count or 0
 
-        approved_resp = sb.table('media_uploads').select('id', count='exact').eq('trainee_id', tid).eq('approval_status', 'approved').execute()
-        stats['approved_media'] = approved_resp.count or 0
-
-        pending_resp = sb.table('media_uploads').select('id', count='exact').eq('trainee_id', tid).eq('approval_status', 'pending').execute()
-        stats['pending_media'] = pending_resp.count or 0
-
-        skills_resp = sb.table('trainee_competencies').select('id', count='exact').eq('trainee_id', tid).eq('status', 'verified').execute()
-        stats['verified_skills'] = skills_resp.count or 0
-
-        intern_resp = sb.table('internships').select('id', count='exact').eq('trainee_id', tid).execute()
-        stats['internships'] = intern_resp.count or 0
-
-        att_total = sb.table('attendance').select('id', count='exact').eq('trainee_id', tid).execute()
-        att_present = sb.table('attendance').select('id', count='exact').eq('trainee_id', tid).eq('status', 'present').execute()
-        if att_total.count and att_total.count > 0:
-            stats['attendance_rate'] = round((att_present.count or 0) / att_total.count * 100, 1)
-        else:
-            stats['attendance_rate'] = 0
+        att_total = sb.table('attendance').select('id', count='exact').eq('trainee_id', tid).execute().count or 0
+        att_present = sb.table('attendance').select('id', count='exact').eq('trainee_id', tid).eq('status', 'present').execute().count or 0
+        stats['attendance_rate'] = round(att_present / att_total * 100, 1) if att_total > 0 else 0
 
         recent_media = sb.table('media_uploads').select('*').eq('trainee_id', tid).order('created_at', desc=True).limit(6).execute().data or []
-
         academic = sb.table('academic_records').select('*').eq('trainee_id', tid).order('semester').limit(5).execute().data or []
-
         internships = sb.table('internships').select('*').eq('trainee_id', tid).order('start_date', desc=True).limit(3).execute().data or []
 
     except Exception:
@@ -84,15 +82,15 @@ def index():
 @trainee_required
 def evidence():
     user = session.get('user')
-    sb = get_supabase()
     trainee = _get_trainee(user['id'])
     if not trainee:
-        return redirect(url_for('auth.logout'))
+        return _trainee_not_found()
 
     category = request.args.get('category', '')
     status_filter = request.args.get('status', '')
 
     try:
+        sb = get_supabase_admin()
         query = sb.table('media_uploads').select('*').eq('trainee_id', trainee['id'])
         if category:
             query = query.eq('category', category)
@@ -118,29 +116,29 @@ def evidence():
 @trainee_required
 def progress():
     user = session.get('user')
-    sb = get_supabase()
     trainee = _get_trainee(user['id'])
     if not trainee:
-        return redirect(url_for('auth.logout'))
+        return _trainee_not_found()
+
+    academic = []
+    competencies = []
+    certifications = []
+    internships = []
+    att_total = []
+    att_rate = 0
 
     try:
+        sb = get_supabase_admin()
         tid = trainee['id']
         academic = sb.table('academic_records').select('*').eq('trainee_id', tid).order('semester').execute().data or []
         competencies = sb.table('trainee_competencies').select('*, competencies(*)').eq('trainee_id', tid).execute().data or []
         certifications = sb.table('certifications').select('*').eq('trainee_id', tid).execute().data or []
         internships = sb.table('internships').select('*').eq('trainee_id', tid).order('start_date', desc=True).execute().data or []
-
         att_total = sb.table('attendance').select('id, status, date').eq('trainee_id', tid).order('date', desc=True).execute().data or []
         present = len([a for a in att_total if a['status'] == 'present'])
         att_rate = round(present / len(att_total) * 100, 1) if att_total else 0
-
     except Exception:
-        academic = []
-        competencies = []
-        certifications = []
-        internships = []
-        att_total = []
-        att_rate = 0
+        pass
 
     return render_template('trainee_dash/progress.html',
                            user=user, trainee=trainee,
@@ -157,10 +155,9 @@ def progress():
 @trainee_required
 def settings():
     user = session.get('user')
-    sb = get_supabase()
     trainee = _get_trainee(user['id'])
     if not trainee:
-        return redirect(url_for('auth.logout'))
+        return _trainee_not_found()
 
     if request.method == 'POST':
         action = request.form.get('action', 'profile')
@@ -173,8 +170,8 @@ def settings():
                 'emergency_phone': request.form.get('emergency_phone', '').strip(),
             }
             try:
-                sb_admin = get_supabase_admin()
-                sb_admin.table('profiles').update(update_data).eq('id', user['id']).execute()
+                sb = get_supabase_admin()
+                sb.table('profiles').update(update_data).eq('id', user['id']).execute()
                 session['user']['full_name'] = update_data['full_name']
                 flash('Profile updated successfully.', 'success')
             except Exception:
@@ -182,6 +179,7 @@ def settings():
         return redirect(url_for('trainee_dash.settings'))
 
     try:
+        sb = get_supabase_admin()
         profile_data = sb.table('profiles').select('*').eq('id', user['id']).single().execute().data or {}
     except Exception:
         profile_data = {}
@@ -200,5 +198,5 @@ def my_portfolio():
     user = session.get('user')
     trainee = _get_trainee(user['id'])
     if not trainee:
-        return redirect(url_for('auth.logout'))
+        return _trainee_not_found()
     return redirect(url_for('portfolio.view', trainee_id=trainee['id']))

@@ -1,0 +1,26 @@
+{% extends "base.html" %}
+{% block title %}Profile Not Found{% endblock %}
+{% block page_title %}Account Setup Incomplete{% endblock %}
+{% block content %}
+<div class="max-w-lg mx-auto text-center py-16">
+  <div class="w-20 h-20 bg-amber-100 rounded-2xl flex items-center justify-center mx-auto mb-6">
+    <i class="fas fa-user-clock text-amber-500 text-3xl"></i>
+  </div>
+  <h2 class="text-xl font-bold text-slate-800 mb-2">Trainee Profile Not Found</h2>
+  <p class="text-slate-500 mb-6">
+    Your login account exists but your trainee profile has not been set up yet.
+    Please contact the institute to complete your registration.
+  </p>
+  <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 text-sm text-amber-800 mb-6 text-left">
+    <p class="font-semibold mb-1"><i class="fas fa-info-circle mr-2"></i>What to do:</p>
+    <ol class="list-decimal list-inside space-y-1 text-amber-700">
+      <li>Contact the institute admissions office</li>
+      <li>Provide your email: <strong>{{ session.get('user', {}).get('email', '') }}</strong></li>
+      <li>Ask them to link your account to your trainee record</li>
+    </ol>
+  </div>
+  <a href="{{ url_for('auth.logout') }}" class="btn-secondary">
+    <i class="fas fa-sign-out-alt"></i> Log Out
+  </a>
+</div>
+{% endblock %}
