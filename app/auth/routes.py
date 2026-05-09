@@ -128,10 +128,10 @@ def register():
         if errors:
             for error in errors:
                 flash(error, 'danger')
-            # Fetch courses and departments for form
-            sb = get_supabase()
-            courses = sb.table('courses').select('*').eq('is_active', True).execute().data or []
-            departments = sb.table('departments').select('*').execute().data or []
+            # Use admin client to bypass RLS for reference data
+            sb_admin = get_supabase_admin()
+            courses = sb_admin.table('courses').select('id, name, code').eq('is_active', True).order('name').execute().data or []
+            departments = sb_admin.table('departments').select('id, name, code').order('name').execute().data or []
             return render_template('auth/register.html', courses=courses, departments=departments, form_data=data)
 
         try:
@@ -193,12 +193,14 @@ def register():
 
     # GET request - load form data
     try:
-        sb = get_supabase()
-        courses = sb.table('courses').select('*').eq('is_active', True).execute().data or []
-        departments = sb.table('departments').select('*').execute().data or []
-    except Exception:
+        # Use admin client to bypass RLS — departments/courses are public reference data
+        sb_admin = get_supabase_admin()
+        courses = sb_admin.table('courses').select('id, name, code').eq('is_active', True).order('name').execute().data or []
+        departments = sb_admin.table('departments').select('id, name, code').order('name').execute().data or []
+    except Exception as e:
         courses = []
         departments = []
+        flash('Could not load departments/courses. Please try again.', 'warning')
 
     return render_template('auth/register.html', courses=courses, departments=departments, form_data={})
 

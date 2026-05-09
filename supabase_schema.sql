@@ -302,6 +302,16 @@ CREATE POLICY "Trainees view own records" ON academic_records FOR SELECT USING (
 CREATE POLICY "Users see own notifications" ON notifications FOR SELECT USING (user_id = auth.uid());
 CREATE POLICY "Users update own notifications" ON notifications FOR UPDATE USING (user_id = auth.uid());
 
+-- Departments & Courses: public read (reference data needed for registration)
+ALTER TABLE departments ENABLE ROW LEVEL SECURITY;
+ALTER TABLE courses ENABLE ROW LEVEL SECURITY;
+ALTER TABLE competencies ENABLE ROW LEVEL SECURITY;
+ALTER TABLE portfolio_views ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Departments are publicly readable" ON departments FOR SELECT USING (true);
+CREATE POLICY "Courses are publicly readable" ON courses FOR SELECT USING (true);
+CREATE POLICY "Competencies are publicly readable" ON competencies FOR SELECT USING (true);
+
 -- ============================================================
 -- SEED DATA - Departments
 -- ============================================================
