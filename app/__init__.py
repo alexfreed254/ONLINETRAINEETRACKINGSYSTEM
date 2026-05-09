@@ -1,7 +1,11 @@
+import os
 from flask import Flask, redirect, url_for, session
 from config import config
 
-def create_app(config_name='default'):
+
+def create_app(config_name=None):
+    if config_name is None:
+        config_name = os.environ.get('FLASK_ENV', 'production')
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 
@@ -32,3 +36,7 @@ def create_app(config_name='default'):
     app.register_blueprint(employer_blueprint, url_prefix='/employer')
 
     return app
+
+
+# Module-level app instance — allows both `gunicorn app:app` and `gunicorn run:app`
+app = create_app()
