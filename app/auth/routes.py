@@ -299,6 +299,31 @@ def change_password():
 # Register (Trainee self-registration)
 # ─────────────────────────────────────────────
 
+def _load_ref_data():
+    """Load departments and courses for the registration form.
+    Tries admin client first (bypasses RLS), falls back to anon client
+    (works if public read policies are applied via supabase_rls_fix.sql).
+    """
+    try:
+        sb_admin = get_supabase_admin()
+        courses = sb_admin.table('courses').select('id, name, code, department_id').eq('is_active', True).order('name').execute().data or []
+        departments = sb_admin.table('departments').select('id, name, code').order('name').execute().data or []
+        return courses, departments
+    except RuntimeError:
+        # Service key not set — fall back to anon client (needs public RLS policy)
+        pass
+    except Exception:
+        pass
+
+    try:
+        sb = get_supabase()
+        courses = sb.table('courses').select('id, name, code, department_id').eq('is_active', True).order('name').execute().data or []
+        departments = sb.table('departments').select('id, name, code').order('name').execute().data or []
+        return courses, departments
+    except Exception:
+        return [], []
+
+
 @auth.route('/register', methods=['GET', 'POST'])
 def register():
     if session.get('user'):
@@ -341,9 +366,7 @@ def register():
         if errors:
             for error in errors:
                 flash(error, 'danger')
-            sb_admin = get_supabase_admin()
-            courses = sb_admin.table('courses').select('id, name, code, department_id').eq('is_active', True).order('name').execute().data or []
-            departments = sb_admin.table('departments').select('id, name, code').order('name').execute().data or []
+            courses, departments = _load_ref_data()
             return render_template('auth/register.html', courses=courses, departments=departments, form_data=data)
 
         try:
@@ -387,6 +410,11 @@ def register():
             else:
                 flash('Registration failed. Please try again.', 'danger')
 
+        except RuntimeError as e:
+            # Service key not configured
+            flash('Registration is temporarily unavailable — system configuration pending. '
+                  'Please contact the institute.', 'danger')
+            current_app.logger.error(f'Register: {e}')
         except Exception as e:
             err = str(e)
             if 'already registered' in err or 'already exists' in err:
@@ -396,14 +424,7 @@ def register():
             else:
                 flash(f'Registration failed: {err[:120]}', 'danger')
 
-    try:
-        sb_admin = get_supabase_admin()
-        courses = sb_admin.table('courses').select('id, name, code, department_id').eq('is_active', True).order('name').execute().data or []
-        departments = sb_admin.table('departments').select('id, name, code').order('name').execute().data or []
-    except Exception:
-        courses = []
-        departments = []
-
+    courses, departments = _load_ref_data()
     return render_template('auth/register.html', courses=courses, departments=departments, form_data={})
 
 
