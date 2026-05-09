@@ -1,5 +1,6 @@
 # ============================================================
-# TSEPIP - Database Setup & Seed Script
+# Thika Technical Training Institute
+# Online Trainee Tracking System — Database Setup & Seed Script
 # Run this ONCE after applying supabase_schema.sql
 # Requires: SUPABASE_SERVICE_KEY in .env
 # Usage: python setup_db.py

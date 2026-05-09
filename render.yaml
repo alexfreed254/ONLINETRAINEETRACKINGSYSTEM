@@ -18,4 +18,4 @@ services:
       - key: SUPABASE_SERVICE_KEY
         sync: false
       - key: INSTITUTION_NAME
-        value: Online Trainee Tracking System
+        value: Thika Technical Training Institute

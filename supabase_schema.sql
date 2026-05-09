@@ -1,6 +1,6 @@
 -- ============================================================
--- TSEPIP - Online Trainee Tracking System
--- Supabase Database Schema
+-- Thika Technical Training Institute
+-- Online Trainee Tracking System — Database Schema
 -- Run this in your Supabase SQL Editor
 -- ============================================================
 

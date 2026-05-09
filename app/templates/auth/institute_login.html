@@ -4,9 +4,9 @@
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 flex items-center justify-center p-4">
   <div class="w-full max-w-md">
     <div class="text-center mb-8">
-      <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-600 rounded-2xl mb-4 shadow-xl">
-        <i class="fas fa-building-columns text-white text-2xl"></i>
-      </div>
+      <img src="{{ url_for('static', filename='images/logo.jpg') }}"
+           alt="TTTI Logo"
+           class="w-20 h-20 rounded-2xl object-cover shadow-xl border-2 border-white/20 mx-auto mb-3">
       <h1 class="text-2xl font-bold text-white">Institute Portal</h1>
       <p class="text-slate-400 text-sm mt-1">{{ config.INSTITUTION_NAME }}</p>
     </div>

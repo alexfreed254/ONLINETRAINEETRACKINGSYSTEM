@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}TSEPIP{% endblock %} | {{ config.INSTITUTION_NAME }}</title>
+    <title>{% block title %}TTTI{% endblock %} | {{ config.INSTITUTION_NAME }}</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -61,13 +61,13 @@
 
   {# Sidebar #}
   <aside id="sidebar" class="fixed inset-y-0 left-0 z-50 w-64 bg-slate-900 flex flex-col transition-transform duration-300 -translate-x-full lg:translate-x-0 lg:static lg:inset-auto">
-    <div class="flex items-center gap-3 px-6 py-5 border-b border-slate-700">
-      <div class="w-9 h-9 bg-blue-600 rounded-xl flex items-center justify-center flex-shrink-0">
-        <i class="fas fa-graduation-cap text-white text-sm"></i>
-      </div>
+    <div class="flex items-center gap-3 px-4 py-4 border-b border-slate-700">
+      <img src="{{ url_for('static', filename='images/logo.jpg') }}"
+           alt="TTTI Logo"
+           class="w-10 h-10 rounded-lg object-cover flex-shrink-0 border border-slate-600">
       <div class="min-w-0">
-        <p class="text-white font-bold text-sm leading-tight truncate">{{ config.INSTITUTION_NAME }}</p>
-        <p class="text-slate-400 text-xs">TSEPIP Platform</p>
+        <p class="text-white font-bold text-xs leading-tight truncate">{{ config.INSTITUTION_NAME }}</p>
+        <p class="text-slate-400 text-xs">Online Trainee Tracking System</p>
       </div>
     </div>
 
@@ -200,7 +200,7 @@
     </main>
 
     <footer class="text-center text-xs text-slate-400 py-4 border-t border-slate-100">
-      &copy; {{ config.INSTITUTION_NAME }} &mdash; TSEPIP Platform
+      &copy; {{ config.INSTITUTION_NAME }} &mdash; Online Trainee Tracking System
     </footer>
   </div>
 </div>

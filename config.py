@@ -12,8 +12,8 @@ class Config:
     ALLOWED_IMAGE_EXTENSIONS = {'jpg', 'jpeg', 'png', 'gif', 'webp'}
     ALLOWED_VIDEO_EXTENSIONS = {'mp4', 'mov', 'avi', 'webm'}
     ALLOWED_DOC_EXTENSIONS = {'pdf'}
-    INSTITUTION_NAME = os.environ.get('INSTITUTION_NAME', 'Technical Institute')
-    INSTITUTION_LOGO = os.environ.get('INSTITUTION_LOGO', '')
+    INSTITUTION_NAME = os.environ.get('INSTITUTION_NAME', 'Thika Technical Training Institute')
+    INSTITUTION_LOGO = os.environ.get('INSTITUTION_LOGO', 'images/logo.jpg')
 
 class DevelopmentConfig(Config):
     DEBUG = True

@@ -1,4 +1,4 @@
-// TSEPIP - Main JavaScript
+// Thika Technical Training Institute — Online Trainee Tracking System
 
 // Auto-dismiss flash messages after 5 seconds
 document.addEventListener('DOMContentLoaded', () => {

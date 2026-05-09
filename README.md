@@ -1,104 +1,80 @@
-# TSEPIP - Technical Skills Evidence & Progress Intelligence Platform
+# Thika Technical Training Institute — Online Trainee Tracking System
 
-An Online Trainee Tracking System built with Flask and Supabase.
+A full-stack web application built with Flask and Supabase for tracking trainee progress, skill evidence, and employer verifications.
+
+## Portals
+
+| Portal | URL | Access |
+|---|---|---|
+| Landing | `/` | Public |
+| Trainee Login | `/auth/trainee/login` | Trainees |
+| Institute Login | `/auth/institute/login` | Admin / Instructors |
+| Employer Login | `/employer/login` | Employers |
 
 ## Features
 
-- **Authentication** - Secure login for admins, trainers, trainees, and employers
-- **Dashboard** - Role-based dashboards with progress overviews
-- **Trainee Management** - Track trainee profiles, skills, and progress
-- **Media Uploads** - Upload images, videos, and documents as evidence
-- **Portfolio** - Trainee skill portfolios with evidence
-- **Employer Verification** - Employer access to verify trainee competencies
+- **Trainee Portal** — Personal dashboard, upload skill evidence (photos/videos/PDFs), track academic progress, manage account, reset password
+- **Institute Dashboard** — View all trainees, approve media, live activity feed, GIS map, employer verifications
+- **Employer Portal** — Register company account, search trainees by name/ID, submit recommendations (read-only for trainees)
+- **Digital Portfolio** — Public shareable trainee portfolio with verified skills and employer reviews
+- **Media Evidence** — Upload with geolocation, skill tags, category, approval workflow
+- **GIS Map** — Internship and project locations on interactive Leaflet map
 
 ## Setup
 
 ### Prerequisites
-
-- Python 3.10+
-- A [Supabase](https://supabase.com) project
+- Python 3.11+
+- [Supabase](https://supabase.com) project
 
 ### Local Development
 
-1. Clone the repository:
-   ```bash
-   git clone <repo-url>
-   cd trainee-tracking-system
-   ```
+```bash
+# Clone and install
+git clone <repo-url>
+cd <repo>
+python -m venv venv
+venv\Scripts\activate   # Windows
+pip install -r requirements.txt
 
-2. Create and activate a virtual environment:
-   ```bash
-   python -m venv venv
-   source venv/bin/activate  # On Windows: venv\Scripts\activate
-   ```
+# Configure
+cp .env.example .env
+# Fill in SUPABASE_URL, SUPABASE_KEY, SUPABASE_SERVICE_KEY
 
-3. Install dependencies:
-   ```bash
-   pip install -r requirements.txt
-   ```
+# Run
+python run.py
+```
 
-4. Copy `.env.example` to `.env` and fill in your values:
-   ```bash
-   cp .env.example .env
-   ```
+### Database Setup
 
-5. Run the development server:
-   ```bash
-   FLASK_ENV=development python run.py
-   ```
+1. Run `supabase_schema.sql` in Supabase SQL Editor
+2. Run `supabase_rls_fix.sql` to add public read policies and seed departments/courses
+3. Run `supabase_employers.sql` to add the employers table
+4. Run `python setup_db.py` to seed data and create admin user
 
-### Environment Variables
+### Create Institute Admin
+
+1. Supabase Dashboard → Authentication → Users → Add User
+2. Copy the UUID
+3. Run in SQL Editor:
+```sql
+INSERT INTO profiles (id, role, full_name, email, is_active)
+VALUES ('YOUR-UUID', 'admin', 'Administrator', 'admin@ttti.ac.ke', true)
+ON CONFLICT (id) DO UPDATE SET role = 'admin', is_active = true;
+```
+
+## Deployment (Render)
+
+1. Push to GitHub
+2. Connect repo on [render.com](https://render.com)
+3. Set environment variables: `SUPABASE_URL`, `SUPABASE_KEY`, `SUPABASE_SERVICE_KEY`, `INSTITUTION_NAME`
+
+## Environment Variables
 
 | Variable | Description |
 |---|---|
-| `SECRET_KEY` | Flask secret key for session signing |
-| `SUPABASE_URL` | Your Supabase project URL |
+| `SECRET_KEY` | Flask session secret key |
+| `SUPABASE_URL` | Supabase project URL |
 | `SUPABASE_KEY` | Supabase anon/public key |
-| `SUPABASE_SERVICE_KEY` | Supabase service role key (admin operations) |
-| `INSTITUTION_NAME` | Name of your institution |
+| `SUPABASE_SERVICE_KEY` | Supabase service role key |
+| `INSTITUTION_NAME` | Institution display name |
 | `FLASK_ENV` | `development` or `production` |
-
-## Deployment
-
-### Render
-
-1. Push your code to a GitHub repository.
-2. Create a new Web Service on [Render](https://render.com) and connect your repo.
-3. Render will detect `render.yaml` and configure the service automatically.
-4. Set the `SUPABASE_URL`, `SUPABASE_KEY`, and `SUPABASE_SERVICE_KEY` environment variables in the Render dashboard.
-
-## Project Structure
-
-```
-.
-├── app/
-│   ├── __init__.py          # App factory
-│   ├── auth/                # Authentication blueprint
-│   ├── dashboard/           # Dashboard blueprint
-│   ├── trainees/            # Trainee management blueprint
-│   ├── media/               # Media upload blueprint
-│   ├── portfolio/           # Portfolio blueprint
-│   ├── employer/            # Employer verification blueprint
-│   ├── static/
-│   │   ├── css/
-│   │   ├── js/
-│   │   └── images/
-│   └── templates/
-│       ├── base.html
-│       ├── auth/
-│       ├── dashboard/
-│       ├── trainees/
-│       ├── media/
-│       ├── portfolio/
-│       └── employer/
-├── config.py
-├── run.py
-├── requirements.txt
-├── .env.example
-├── Procfile
-└── render.yaml
-```
-
-## License
-
-MIT

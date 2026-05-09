@@ -4,11 +4,13 @@
 <div class="min-h-screen bg-gradient-to-br from-slate-900 via-blue-950 to-slate-900 flex items-center justify-center p-4">
   <div class="w-full max-w-5xl">
     <div class="text-center mb-10">
-      <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4 shadow-xl">
-        <i class="fas fa-graduation-cap text-white text-2xl"></i>
+      <div class="flex items-center justify-center gap-4 mb-4">
+        <img src="{{ url_for('static', filename='images/logo.jpg') }}"
+             alt="TTTI Logo"
+             class="w-20 h-20 rounded-2xl object-cover shadow-xl border-2 border-white/20">
       </div>
       <h1 class="text-3xl font-bold text-white">{{ config.INSTITUTION_NAME }}</h1>
-      <p class="text-slate-400 mt-2">Technical Skills Evidence & Progress Platform</p>
+      <p class="text-slate-400 mt-2">Online Trainee Tracking System</p>
     </div>
 
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -63,7 +65,7 @@
       </div>
 
     </div>
-    <p class="text-center text-slate-600 text-xs mt-8">&copy; {{ config.INSTITUTION_NAME }} &mdash; TSEPIP Platform</p>
+    <p class="text-center text-slate-600 text-xs mt-8">&copy; {{ config.INSTITUTION_NAME }} &mdash; Online Trainee Tracking System</p>
   </div>
 </div>
 {% endblock %}
