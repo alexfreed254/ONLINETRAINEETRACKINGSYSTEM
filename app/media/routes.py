@@ -143,12 +143,23 @@ def upload():
             sb_admin.table('media_uploads').insert(record).execute()
             flash('Media uploaded successfully!' + (' Pending approval.' if approval_status == 'pending' else ''), 'success')
 
+            # Redirect based on role
+            if user.get('role') == 'trainee':
+                return redirect(url_for('trainee_dash.evidence'))
             if trainee_id:
                 return redirect(url_for('trainees.detail', trainee_id=trainee_id))
             return redirect(url_for('media.gallery'))
 
         except Exception as e:
-            flash(f'Upload failed: {str(e)[:150]}', 'danger')
+            err_str = str(e)
+            if 'Bucket not found' in err_str:
+                flash(
+                    'Storage bucket not configured. '
+                    'Please ask the institute admin to create the "trainee-media" bucket in Supabase Storage.',
+                    'danger'
+                )
+            else:
+                flash(f'Upload failed: {err_str[:150]}', 'danger')
 
     # GET
     try:
