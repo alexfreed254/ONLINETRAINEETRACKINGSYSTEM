@@ -1,7 +1,7 @@
 from flask import render_template, session, redirect, url_for, flash, request, jsonify
 from app.employer import employer
 from app.auth.routes import login_required
-from app.supabase_client import get_supabase, get_supabase_admin
+from app.supabase_client import get_supabase_admin
 from datetime import datetime
 from functools import wraps
 
@@ -115,19 +115,22 @@ def login():
             return render_template('employer/login.html')
 
         try:
-            sb = get_supabase()
-            resp = sb.auth.sign_in_with_password({'email': email, 'password': password})
+            from app.supabase_client import get_supabase
+            sb_anon = get_supabase()
+            resp = sb_anon.auth.sign_in_with_password({'email': email, 'password': password})
 
             if resp.user:
-                profile = sb.table('profiles').select('*').eq('id', resp.user.id).single().execute().data or {}
+                sb = get_supabase_admin()
+                profile = sb.table('profiles').select('*').eq('id', resp.user.id).execute().data
+                profile = profile[0] if profile else {}
 
                 if profile.get('role') != 'employer':
-                    sb.auth.sign_out()
+                    sb_anon.auth.sign_out()
                     flash('This portal is for employers only.', 'warning')
                     return render_template('employer/login.html')
 
-                # Get employer record
-                emp = sb.table('employers').select('*').eq('profile_id', resp.user.id).single().execute().data or {}
+                emp_rows = sb.table('employers').select('*').eq('profile_id', resp.user.id).execute().data or []
+                emp = emp_rows[0] if emp_rows else {}
 
                 session['user'] = {
                     'id': resp.user.id,
@@ -160,11 +163,6 @@ def login():
 
 @employer.route('/logout')
 def logout():
-    try:
-        sb = get_supabase()
-        sb.auth.sign_out()
-    except Exception:
-        pass
     session.clear()
     flash('You have been logged out.', 'info')
     return redirect(url_for('employer.login'))
@@ -319,7 +317,7 @@ def index():
     if user.get('role') == 'employer':
         return redirect(url_for('employer.dashboard'))
 
-    sb = get_supabase()
+    sb = get_supabase_admin()
     current_status = request.args.get('status', '')
 
     try:
