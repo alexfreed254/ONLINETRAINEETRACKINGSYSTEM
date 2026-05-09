@@ -1,0 +1,76 @@
+{% extends "base.html" %}
+{% block title %}Find Trainee{% endblock %}
+{% block page_title %}Search Trainees{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto">
+
+  <!-- Search Box -->
+  <div class="card p-6 mb-6">
+    <h3 class="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+      <i class="fas fa-search text-emerald-500"></i> Search by Name, National ID, or Admission Number
+    </h3>
+    <form method="POST" class="flex gap-3">
+      <div class="relative flex-1">
+        <span class="absolute inset-y-0 left-3 flex items-center text-slate-400"><i class="fas fa-search text-sm"></i></span>
+        <input type="text" name="query" required class="form-input pl-9" placeholder="e.g. John Mwangi or 12345678"
+          value="{{ query }}">
+      </div>
+      <button type="submit" class="btn-primary flex-shrink-0"><i class="fas fa-search"></i> Search</button>
+    </form>
+    <p class="text-xs text-slate-400 mt-2">Search by full name, national ID number, or admission number</p>
+  </div>
+
+  <!-- Results -->
+  {% if query %}
+  <div class="mb-4">
+    <p class="text-sm text-slate-500">
+      Found <span class="font-semibold text-slate-700">{{ results|length }}</span> result(s) for
+      "<span class="text-emerald-600 font-medium">{{ query }}</span>"
+    </p>
+  </div>
+
+  {% if results %}
+  <div class="space-y-3">
+    {% for t in results %}
+    {% set p = t.profiles or {} %}
+    {% set dept = t.departments or {} %}
+    {% set course = t.courses or {} %}
+    <div class="card p-4 flex items-center gap-4 hover:border-emerald-200 border border-transparent transition-all">
+      {% if p.profile_photo_url %}
+        <img src="{{ p.profile_photo_url }}" class="w-14 h-14 rounded-2xl object-cover flex-shrink-0" alt="">
+      {% else %}
+        <div class="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-xl font-bold flex-shrink-0">
+          {{ p.full_name[0]|upper if p.full_name else '?' }}
+        </div>
+      {% endif %}
+      <div class="flex-1 min-w-0">
+        <p class="font-bold text-slate-800">{{ p.full_name or 'Unknown' }}</p>
+        <p class="text-sm text-slate-500">{{ t.admission_number }}</p>
+        <div class="flex flex-wrap gap-2 mt-1">
+          {% if dept.name %}<span class="tag text-xs">{{ dept.name }}</span>{% endif %}
+          {% if course.name %}<span class="tag text-xs">{{ course.name }}</span>{% endif %}
+          {% if p.county_region %}<span class="tag text-xs"><i class="fas fa-map-pin mr-1"></i>{{ p.county_region }}</span>{% endif %}
+        </div>
+      </div>
+      <div class="flex flex-col gap-2 flex-shrink-0">
+        <a href="{{ url_for('employer.recommend', trainee_id=t.id) }}" class="btn-primary text-xs">
+          <i class="fas fa-star"></i> Recommend
+        </a>
+        <a href="{{ url_for('portfolio.view', trainee_id=t.id) }}" class="btn-secondary text-xs">
+          <i class="fas fa-briefcase"></i> Portfolio
+        </a>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="text-center py-16 text-slate-400">
+    <i class="fas fa-user-slash text-5xl mb-4 opacity-20"></i>
+    <p class="text-base font-medium">No trainees found</p>
+    <p class="text-sm mt-1">Try a different name or ID number</p>
+  </div>
+  {% endif %}
+  {% endif %}
+
+</div>
+{% endblock %}

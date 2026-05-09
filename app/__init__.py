@@ -9,12 +9,16 @@ def create_app(config_name=None):
     app = Flask(__name__)
     app.config.from_object(config[config_name])
 
-    # Root redirect
+    # Root redirect — smart based on role
     @app.route('/')
     def index():
-        if session.get('user'):
-            return redirect(url_for('dashboard.index'))
-        return redirect(url_for('auth.login'))
+        user = session.get('user')
+        if not user:
+            return redirect(url_for('auth.login'))
+        role = user.get('role')
+        if role == 'trainee':
+            return redirect(url_for('trainee_dash.index'))
+        return redirect(url_for('dashboard.index'))
 
     # Register blueprints
     from app.auth import auth as auth_blueprint
@@ -22,6 +26,9 @@ def create_app(config_name=None):
 
     from app.dashboard import dashboard as dashboard_blueprint
     app.register_blueprint(dashboard_blueprint, url_prefix='/dashboard')
+
+    from app.trainee_dash import trainee_dash as trainee_dash_blueprint
+    app.register_blueprint(trainee_dash_blueprint, url_prefix='/my')
 
     from app.trainees import trainees as trainees_blueprint
     app.register_blueprint(trainees_blueprint, url_prefix='/trainees')

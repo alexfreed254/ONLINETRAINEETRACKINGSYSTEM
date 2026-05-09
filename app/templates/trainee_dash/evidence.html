@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% block title %}My Evidence{% endblock %}
+{% block page_title %}My Evidence Uploads{% endblock %}
+{% block content %}
+
+<!-- Filters + Upload -->
+<div class="card p-4 mb-6">
+  <form method="GET" class="flex flex-wrap gap-3 items-end">
+    <div>
+      <label class="form-label text-xs">Category</label>
+      <select name="category" class="form-input text-xs" onchange="this.form.submit()">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat }}" {% if current_category==cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label text-xs">Status</label>
+      <select name="status" class="form-input text-xs" onchange="this.form.submit()">
+        <option value="">All Status</option>
+        <option value="approved" {% if current_status=='approved' %}selected{% endif %}>Approved</option>
+        <option value="pending" {% if current_status=='pending' %}selected{% endif %}>Pending</option>
+        <option value="rejected" {% if current_status=='rejected' %}selected{% endif %}>Rejected</option>
+      </select>
+    </div>
+    {% if current_category or current_status %}
+    <a href="{{ url_for('trainee_dash.evidence') }}" class="btn-secondary text-xs self-end"><i class="fas fa-times"></i> Clear</a>
+    {% endif %}
+    <div class="ml-auto self-end">
+      <a href="{{ url_for('media.upload') }}" class="btn-primary text-xs"><i class="fas fa-upload"></i> Upload New</a>
+    </div>
+  </form>
+</div>
+
+<div class="flex items-center justify-between mb-4">
+  <p class="text-sm text-slate-500"><span class="font-semibold text-slate-700">{{ media|length }}</span> items</p>
+</div>
+
+{% if media %}
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 xl:grid-cols-5 gap-4">
+  {% for item in media %}
+  <div class="card overflow-hidden group hover:shadow-md hover:border-blue-200 border border-transparent transition-all">
+    <a href="{{ url_for('media.view', media_id=item.id) }}" class="block">
+      <div class="aspect-square bg-slate-100 relative overflow-hidden">
+        {% if item.media_type == 'image' %}
+          <img src="{{ item.thumbnail_url or item.file_url }}" alt="{{ item.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+        {% elif item.media_type == 'video' %}
+          <div class="w-full h-full bg-slate-800 flex items-center justify-center">
+            <i class="fas fa-play text-white text-2xl"></i>
+          </div>
+        {% else %}
+          <div class="w-full h-full flex items-center justify-center bg-red-50">
+            <i class="fas fa-file-pdf text-red-400 text-3xl"></i>
+          </div>
+        {% endif %}
+        <span class="absolute top-2 right-2 badge text-xs
+          {% if item.approval_status=='approved' %}bg-emerald-500 text-white
+          {% elif item.approval_status=='rejected' %}bg-red-500 text-white
+          {% else %}bg-amber-500 text-white{% endif %} capitalize">
+          {{ item.approval_status }}
+        </span>
+      </div>
+    </a>
+    <div class="p-3">
+      <p class="text-xs font-semibold text-slate-800 truncate">{{ item.title }}</p>
+      {% if item.category %}<p class="text-xs text-slate-400 mt-0.5">{{ item.category }}</p>{% endif %}
+      {% if item.skill_tags %}
+      <div class="flex flex-wrap gap-1 mt-1.5">
+        {% for tag in (item.skill_tags or [])[:2] %}<span class="tag text-xs">#{{ tag }}</span>{% endfor %}
+      </div>
+      {% endif %}
+      <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
+        <span class="text-xs text-slate-400">{{ item.created_at[:10] if item.created_at else '' }}</span>
+        <form method="POST" action="{{ url_for('media.delete', media_id=item.id) }}" onsubmit="return confirm('Delete this item?')">
+          <button type="submit" class="text-xs text-red-400 hover:text-red-600 transition-colors">
+            <i class="fas fa-trash"></i>
+          </button>
+        </form>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-20 text-slate-400">
+  <i class="fas fa-photo-film text-5xl mb-4 opacity-20"></i>
+  <p class="text-base font-medium">No evidence found</p>
+  <a href="{{ url_for('media.upload') }}" class="btn-primary mt-4 inline-flex"><i class="fas fa-upload"></i> Upload Evidence</a>
+</div>
+{% endif %}
+{% endblock %}

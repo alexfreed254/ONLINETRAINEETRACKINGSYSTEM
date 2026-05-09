@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% block title %}Employer Registration{% endblock %}
+{% block guest_content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-900 to-slate-900 flex items-center justify-center p-4 py-10">
+  <div class="w-full max-w-lg">
+    <div class="text-center mb-6">
+      <div class="inline-flex items-center justify-center w-14 h-14 bg-emerald-600 rounded-2xl mb-3 shadow-lg">
+        <i class="fas fa-building text-white text-xl"></i>
+      </div>
+      <h1 class="text-xl font-bold text-white">Employer Registration</h1>
+      <p class="text-slate-400 text-sm">Create your company account to verify trainees</p>
+    </div>
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+      <form method="POST" class="space-y-4">
+        <div>
+          <label class="form-label">Company / Organisation Name <span class="text-red-500">*</span></label>
+          <input type="text" name="company_name" required class="form-input" placeholder="ABC Engineering Ltd"
+            value="{{ form_data.get('company_name','') }}">
+        </div>
+        <div>
+          <label class="form-label">Official Email <span class="text-red-500">*</span></label>
+          <input type="email" name="email" required class="form-input" placeholder="hr@company.com"
+            value="{{ form_data.get('email','') }}">
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Phone / Contact</label>
+            <input type="tel" name="phone" class="form-input" placeholder="+254 700 000000"
+              value="{{ form_data.get('phone','') }}">
+          </div>
+          <div>
+            <label class="form-label">Location / City</label>
+            <input type="text" name="location" class="form-input" placeholder="Nairobi, Kenya"
+              value="{{ form_data.get('location','') }}">
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Industry / Sector</label>
+          <select name="industry" class="form-input">
+            <option value="">Select industry</option>
+            {% for ind in ['Electrical & Electronics','Mechanical Engineering','Construction & Civil','Information Technology','Automotive','Manufacturing','Plumbing & Sanitation','Carpentry & Joinery','Welding & Fabrication','Other'] %}
+            <option value="{{ ind }}" {% if form_data.get('industry')==ind %}selected{% endif %}>{{ ind }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div>
+            <label class="form-label">Password <span class="text-red-500">*</span></label>
+            <input type="password" name="password" required class="form-input" placeholder="Min 8 characters">
+          </div>
+          <div>
+            <label class="form-label">Confirm Password <span class="text-red-500">*</span></label>
+            <input type="password" name="confirm_password" required class="form-input" placeholder="Repeat password">
+          </div>
+        </div>
+        <button type="submit" class="w-full py-3 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors">
+          <i class="fas fa-building mr-2"></i>Create Employer Account
+        </button>
+      </form>
+      <p class="text-center text-sm text-slate-500 mt-4">
+        Already have an account?
+        <a href="{{ url_for('employer.login') }}" class="text-emerald-600 font-medium hover:underline">Sign in</a>
+      </p>
+    </div>
+  </div>
+</div>
+{% endblock %}

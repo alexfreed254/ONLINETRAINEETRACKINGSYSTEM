@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Recommend Trainee{% endblock %}
+{% block page_title %}Submit Recommendation{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{{ url_for('employer.search') }}" class="btn-secondary text-xs"><i class="fas fa-arrow-left"></i> Back to Search</a>
+  </div>
+
+  {% set p = trainee.profiles or {} %}
+  {% set dept = trainee.departments or {} %}
+  {% set course = trainee.courses or {} %}
+
+  <!-- Trainee Card -->
+  <div class="card p-5 mb-6">
+    <div class="flex items-center gap-4">
+      {% if p.profile_photo_url %}
+        <img src="{{ p.profile_photo_url }}" class="w-16 h-16 rounded-2xl object-cover flex-shrink-0" alt="">
+      {% else %}
+        <div class="w-16 h-16 rounded-2xl bg-emerald-100 text-emerald-700 flex items-center justify-center text-2xl font-bold flex-shrink-0">
+          {{ p.full_name[0]|upper if p.full_name else '?' }}
+        </div>
+      {% endif %}
+      <div>
+        <h3 class="text-lg font-bold text-slate-800">{{ p.full_name or 'Unknown' }}</h3>
+        <p class="text-sm text-slate-500">{{ trainee.admission_number }}</p>
+        <div class="flex flex-wrap gap-2 mt-1">
+          {% if dept.name %}<span class="tag text-xs">{{ dept.name }}</span>{% endif %}
+          {% if course.name %}<span class="tag text-xs">{{ course.name }}</span>{% endif %}
+        </div>
+      </div>
+      <a href="{{ url_for('portfolio.view', trainee_id=trainee.id) }}" class="ml-auto btn-secondary text-xs flex-shrink-0">
+        <i class="fas fa-briefcase"></i> View Portfolio
+      </a>
+    </div>
+  </div>
+
+  <!-- Recommendation Form -->
+  <div class="card p-6">
+    <h3 class="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+      <i class="fas fa-star text-emerald-500"></i> Your Recommendation
+    </h3>
+    <form method="POST" class="space-y-4">
+
+      <div>
+        <label class="form-label">Relationship Type</label>
+        <select name="verification_type" class="form-input">
+          <option value="employment">Employment — This trainee works/worked at our company</option>
+          <option value="internship">Internship — This trainee completed an internship with us</option>
+          <option value="project">Project — This trainee worked on a project with us</option>
+          <option value="skill">Skill Assessment — We assessed this trainee's skills</option>
+        </select>
+      </div>
+
+      <div>
+        <label class="form-label">Overall Rating</label>
+        <div class="flex items-center gap-3 mt-1" id="star-rating">
+          {% for i in range(1,6) %}
+          <label class="cursor-pointer">
+            <input type="radio" name="rating" value="{{ i }}" class="hidden" {% if i==4 %}checked{% endif %}>
+            <i class="fas fa-star text-2xl text-slate-200 hover:text-amber-400 transition-colors star-btn" data-val="{{ i }}"></i>
+          </label>
+          {% endfor %}
+          <span class="text-sm text-slate-500 ml-2" id="rating-label">4 / 5</span>
+        </div>
+      </div>
+
+      <div>
+        <label class="form-label">Recommendation / Comment <span class="text-red-500">*</span></label>
+        <textarea name="comments" rows="5" required class="form-input resize-none"
+          placeholder="Describe this trainee's performance, skills demonstrated, work ethic, and your overall assessment. This will be visible to the trainee and the institute."></textarea>
+        <p class="text-xs text-slate-400 mt-1">
+          <i class="fas fa-info-circle mr-1"></i>
+          This recommendation will be visible to the trainee (read-only) and the institute.
+        </p>
+      </div>
+
+      <div>
+        <label class="form-label">Status</label>
+        <select name="status" class="form-input">
+          <option value="verified">Verified — I confirm this trainee's involvement</option>
+          <option value="reviewed">Reviewed — Under further assessment</option>
+        </select>
+      </div>
+
+      <div class="flex gap-3 justify-end pt-2">
+        <a href="{{ url_for('employer.search') }}" class="btn-secondary">Cancel</a>
+        <button type="submit" class="btn-success">
+          <i class="fas fa-check-circle"></i> Submit Recommendation
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+const stars = document.querySelectorAll('.star-btn');
+const ratingLabel = document.getElementById('rating-label');
+let currentRating = 4;
+function updateStars(val) {
+  stars.forEach((s, i) => {
+    s.classList.toggle('text-amber-400', i < val);
+    s.classList.toggle('text-slate-200', i >= val);
+  });
+  ratingLabel.textContent = val + ' / 5';
+}
+updateStars(currentRating);
+stars.forEach((star, idx) => {
+  star.addEventListener('click', () => {
+    currentRating = idx + 1;
+    star.closest('label').querySelector('input').checked = true;
+    updateStars(currentRating);
+  });
+  star.addEventListener('mouseenter', () => updateStars(idx + 1));
+  star.addEventListener('mouseleave', () => updateStars(currentRating));
+});
+</script>
+{% endblock %}

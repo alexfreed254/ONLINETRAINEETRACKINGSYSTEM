@@ -1,0 +1,151 @@
+{% extends "base.html" %}
+{% block title %}My Progress{% endblock %}
+{% block page_title %}Academic Progress{% endblock %}
+{% block content %}
+{% set p = trainee.profiles or {} %}
+
+<!-- Attendance Summary -->
+<div class="grid grid-cols-1 sm:grid-cols-4 gap-4 mb-6">
+  <div class="stat-card text-center">
+    <i class="fas fa-calendar-check text-blue-500 text-2xl mb-2"></i>
+    <p class="text-2xl font-bold text-slate-800">{{ att_rate }}%</p>
+    <p class="text-xs text-slate-500">Attendance Rate</p>
+  </div>
+  <div class="stat-card text-center">
+    <i class="fas fa-book text-violet-500 text-2xl mb-2"></i>
+    <p class="text-2xl font-bold text-slate-800">{{ academic|length }}</p>
+    <p class="text-xs text-slate-500">Units Recorded</p>
+  </div>
+  <div class="stat-card text-center">
+    <i class="fas fa-star text-amber-500 text-2xl mb-2"></i>
+    <p class="text-2xl font-bold text-slate-800">{{ competencies|selectattr('status','eq','verified')|list|length }}</p>
+    <p class="text-xs text-slate-500">Verified Skills</p>
+  </div>
+  <div class="stat-card text-center">
+    <i class="fas fa-certificate text-emerald-500 text-2xl mb-2"></i>
+    <p class="text-2xl font-bold text-slate-800">{{ certifications|length }}</p>
+    <p class="text-xs text-slate-500">Certifications</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+
+  <!-- Academic Records -->
+  <div class="card p-5">
+    <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+      <i class="fas fa-book text-blue-500"></i> Academic Records
+    </h3>
+    {% if academic %}
+    <div class="overflow-x-auto">
+      <table class="w-full text-xs">
+        <thead class="bg-slate-50 border-b border-slate-100">
+          <tr>
+            <th class="text-left px-3 py-2 font-semibold text-slate-600">Sem</th>
+            <th class="text-left px-3 py-2 font-semibold text-slate-600">Unit</th>
+            <th class="text-left px-3 py-2 font-semibold text-slate-600">Grade</th>
+            <th class="text-left px-3 py-2 font-semibold text-slate-600">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          {% for rec in academic %}
+          <tr class="hover:bg-slate-50">
+            <td class="px-3 py-2 font-medium">{{ rec.semester }}</td>
+            <td class="px-3 py-2 text-slate-700">{{ rec.unit_name }}</td>
+            <td class="px-3 py-2"><span class="badge bg-blue-100 text-blue-700">{{ rec.grade or '—' }}</span></td>
+            <td class="px-3 py-2"><span class="badge {% if rec.status=='completed' %}bg-emerald-100 text-emerald-700{% elif rec.status=='failed' %}bg-red-100 text-red-700{% else %}bg-slate-100 text-slate-600{% endif %} capitalize">{{ rec.status }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-8 text-slate-400"><i class="fas fa-book text-3xl mb-2 opacity-20"></i><p class="text-sm">No academic records yet.</p></div>
+    {% endif %}
+  </div>
+
+  <!-- Competencies -->
+  <div class="card p-5">
+    <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+      <i class="fas fa-star text-blue-500"></i> Skills & Competencies
+    </h3>
+    {% if competencies %}
+    <div class="space-y-2">
+      {% for comp in competencies %}
+      {% set c = comp.competencies or {} %}
+      <div class="flex items-center justify-between p-2 rounded-lg bg-slate-50">
+        <div>
+          <p class="text-xs font-medium text-slate-700">{{ c.name or 'Unknown' }}</p>
+          <p class="text-xs text-slate-400">{{ c.category or '' }}</p>
+        </div>
+        <div class="flex items-center gap-2">
+          {% if comp.rating %}
+          <div class="flex gap-0.5">
+            {% for i in range(1,6) %}<i class="fas fa-star text-xs {% if i <= comp.rating %}text-amber-400{% else %}text-slate-200{% endif %}"></i>{% endfor %}
+          </div>
+          {% endif %}
+          <span class="badge text-xs {% if comp.status=='verified' %}bg-emerald-100 text-emerald-700{% elif comp.status=='rejected' %}bg-red-100 text-red-700{% else %}bg-amber-100 text-amber-700{% endif %} capitalize">{{ comp.status }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-8 text-slate-400"><i class="fas fa-star text-3xl mb-2 opacity-20"></i><p class="text-sm">No competencies recorded yet.</p></div>
+    {% endif %}
+  </div>
+
+  <!-- Internships -->
+  <div class="card p-5">
+    <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+      <i class="fas fa-briefcase text-blue-500"></i> Internships
+    </h3>
+    {% if internships %}
+    <div class="space-y-3">
+      {% for intern in internships %}
+      <div class="p-3 bg-slate-50 rounded-xl">
+        <div class="flex items-start justify-between gap-2">
+          <div>
+            <p class="font-semibold text-slate-800 text-sm">{{ intern.company_name }}</p>
+            {% if intern.location_name %}<p class="text-xs text-slate-500"><i class="fas fa-map-pin mr-1 text-red-400"></i>{{ intern.location_name }}</p>{% endif %}
+            {% if intern.start_date %}<p class="text-xs text-slate-400">{{ intern.start_date }} → {{ intern.end_date or 'Present' }}</p>{% endif %}
+          </div>
+          <span class="badge text-xs {% if intern.status=='active' %}bg-emerald-100 text-emerald-700{% elif intern.status=='completed' %}bg-blue-100 text-blue-700{% else %}bg-slate-100 text-slate-600{% endif %} capitalize flex-shrink-0">{{ intern.status }}</span>
+        </div>
+        {% if intern.employer_rating %}
+        <div class="flex gap-0.5 mt-2">
+          {% for i in range(1,6) %}<i class="fas fa-star text-xs {% if i <= intern.employer_rating %}text-amber-400{% else %}text-slate-200{% endif %}"></i>{% endfor %}
+          <span class="text-xs text-slate-400 ml-1">Employer rating</span>
+        </div>
+        {% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-8 text-slate-400"><i class="fas fa-briefcase text-3xl mb-2 opacity-20"></i><p class="text-sm">No internship records yet.</p></div>
+    {% endif %}
+  </div>
+
+  <!-- Certifications -->
+  <div class="card p-5">
+    <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
+      <i class="fas fa-certificate text-blue-500"></i> Certifications
+    </h3>
+    {% if certifications %}
+    <div class="space-y-2">
+      {% for cert in certifications %}
+      <div class="flex items-center gap-3 p-2 bg-slate-50 rounded-xl">
+        <div class="w-9 h-9 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fas fa-certificate text-amber-600"></i></div>
+        <div class="min-w-0">
+          <p class="text-xs font-semibold text-slate-800 truncate">{{ cert.name }}</p>
+          {% if cert.issuing_body %}<p class="text-xs text-slate-400">{{ cert.issuing_body }}</p>{% endif %}
+        </div>
+        {% if cert.is_verified %}<span class="badge bg-emerald-100 text-emerald-700 text-xs ml-auto flex-shrink-0"><i class="fas fa-check mr-1"></i>Verified</span>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-8 text-slate-400"><i class="fas fa-certificate text-3xl mb-2 opacity-20"></i><p class="text-sm">No certifications yet.</p></div>
+    {% endif %}
+  </div>
+
+</div>
+{% endblock %}

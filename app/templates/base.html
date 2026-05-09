@@ -72,6 +72,43 @@
     </div>
 
     <nav class="flex-1 px-3 py-4 space-y-1 overflow-y-auto scrollbar-thin">
+
+      {# ── TRAINEE NAV ── #}
+      {% if user.role == 'trainee' %}
+      <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider px-4 mb-2">My Account</p>
+      <a href="{{ url_for('trainee_dash.index') }}" class="sidebar-link {% if request.endpoint == 'trainee_dash.index' %}active{% endif %}">
+        <i class="fas fa-home w-4"></i> My Dashboard
+      </a>
+      <a href="{{ url_for('trainee_dash.evidence') }}" class="sidebar-link {% if request.endpoint == 'trainee_dash.evidence' %}active{% endif %}">
+        <i class="fas fa-photo-film w-4"></i> My Evidence
+      </a>
+      <a href="{{ url_for('trainee_dash.progress') }}" class="sidebar-link {% if request.endpoint == 'trainee_dash.progress' %}active{% endif %}">
+        <i class="fas fa-chart-line w-4"></i> My Progress
+      </a>
+      <a href="{{ url_for('trainee_dash.my_portfolio') }}" class="sidebar-link">
+        <i class="fas fa-briefcase w-4"></i> My Portfolio
+      </a>
+      <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider px-4 mt-4 mb-2">Upload</p>
+      <a href="{{ url_for('media.upload') }}" class="sidebar-link {% if request.endpoint == 'media.upload' %}active{% endif %}">
+        <i class="fas fa-cloud-upload-alt w-4"></i> Upload Evidence
+      </a>
+      <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider px-4 mt-4 mb-2">Settings</p>
+      <a href="{{ url_for('trainee_dash.settings') }}" class="sidebar-link {% if request.endpoint == 'trainee_dash.settings' %}active{% endif %}">
+        <i class="fas fa-cog w-4"></i> Account Settings
+      </a>
+
+      {# ── EMPLOYER NAV ── #}
+      {% elif user.role == 'employer' %}
+      <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider px-4 mb-2">Employer</p>
+      <a href="{{ url_for('employer.dashboard') }}" class="sidebar-link {% if request.endpoint == 'employer.dashboard' %}active{% endif %}">
+        <i class="fas fa-home w-4"></i> Dashboard
+      </a>
+      <a href="{{ url_for('employer.search') }}" class="sidebar-link {% if request.endpoint == 'employer.search' %}active{% endif %}">
+        <i class="fas fa-search w-4"></i> Find Trainee
+      </a>
+
+      {# ── INSTITUTE NAV (admin/instructor) ── #}
+      {% else %}
       <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider px-4 mb-2">Main</p>
       <a href="{{ url_for('dashboard.index') }}" class="sidebar-link {% if request.endpoint == 'dashboard.index' %}active{% endif %}">
         <i class="fas fa-chart-pie w-4"></i> Dashboard
@@ -82,34 +119,26 @@
       <a href="{{ url_for('dashboard.geo_map') }}" class="sidebar-link {% if request.endpoint == 'dashboard.geo_map' %}active{% endif %}">
         <i class="fas fa-map-marked-alt w-4"></i> GIS Map
       </a>
-
       <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider px-4 mt-4 mb-2">Trainees</p>
       <a href="{{ url_for('trainees.index') }}" class="sidebar-link {% if request.endpoint and 'trainees' in request.endpoint %}active{% endif %}">
         <i class="fas fa-users w-4"></i> All Trainees
       </a>
-      {% if user.role in ('admin','instructor') %}
       <a href="{{ url_for('auth.register') }}" class="sidebar-link">
         <i class="fas fa-user-plus w-4"></i> Add Trainee
       </a>
-      {% endif %}
-
       <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider px-4 mt-4 mb-2">Media</p>
       <a href="{{ url_for('media.gallery') }}" class="sidebar-link {% if request.endpoint == 'media.gallery' %}active{% endif %}">
         <i class="fas fa-photo-film w-4"></i> Gallery
       </a>
-      <a href="{{ url_for('media.upload') }}" class="sidebar-link {% if request.endpoint == 'media.upload' %}active{% endif %}">
-        <i class="fas fa-cloud-upload-alt w-4"></i> Upload
-      </a>
-      {% if user.role in ('admin','instructor') %}
       <a href="{{ url_for('media.pending') }}" class="sidebar-link {% if request.endpoint == 'media.pending' %}active{% endif %}">
         <i class="fas fa-clock w-4"></i> Pending Review
       </a>
-      {% endif %}
-
       <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider px-4 mt-4 mb-2">Employer</p>
       <a href="{{ url_for('employer.index') }}" class="sidebar-link {% if request.endpoint and 'employer' in request.endpoint %}active{% endif %}">
-        <i class="fas fa-building w-4"></i> Employer Portal
+        <i class="fas fa-building w-4"></i> Verifications
       </a>
+      {% endif %}
+
     </nav>
 
     <div class="px-3 py-4 border-t border-slate-700">
@@ -125,7 +154,7 @@
           <p class="text-white text-xs font-medium truncate">{{ user.full_name }}</p>
           <p class="text-slate-400 text-xs capitalize">{{ user.role }}</p>
         </div>
-        <a href="{{ url_for('auth.logout') }}" class="text-slate-400 hover:text-white transition-colors" title="Logout">
+        <a href="{% if user.role == 'employer' %}{{ url_for('employer.logout') }}{% else %}{{ url_for('auth.logout') }}{% endif %}" class="text-slate-400 hover:text-white transition-colors" title="Logout">
           <i class="fas fa-sign-out-alt text-sm"></i>
         </a>
       </div>

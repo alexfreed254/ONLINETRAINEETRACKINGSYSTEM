@@ -1,0 +1,152 @@
+{% extends "base.html" %}
+{% block title %}My Dashboard{% endblock %}
+{% block page_title %}My Dashboard{% endblock %}
+{% block content %}
+{% set p = trainee.profiles or {} %}
+{% set dept = trainee.departments or {} %}
+{% set course = trainee.courses or {} %}
+
+<!-- Welcome Banner -->
+<div class="bg-gradient-to-r from-blue-700 to-blue-900 rounded-2xl p-6 mb-6 text-white relative overflow-hidden">
+  <div class="absolute right-0 top-0 w-48 h-48 bg-white/5 rounded-full -translate-y-12 translate-x-12"></div>
+  <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4 relative">
+    <div class="w-16 h-16 rounded-2xl bg-white/20 flex items-center justify-center text-2xl font-bold flex-shrink-0 border-2 border-white/30">
+      {{ p.full_name[0]|upper if p.full_name else '?' }}
+    </div>
+    <div class="flex-1">
+      <h2 class="text-xl font-bold">Welcome back, {{ p.full_name or 'Trainee' }}!</h2>
+      <p class="text-blue-200 text-sm mt-0.5">{{ trainee.admission_number }} &bull; {{ course.name or 'No course assigned' }}</p>
+      <div class="flex flex-wrap gap-2 mt-2">
+        {% if dept.name %}<span class="bg-white/15 text-white text-xs px-2.5 py-1 rounded-full">{{ dept.name }}</span>{% endif %}
+        <span class="bg-white/15 text-white text-xs px-2.5 py-1 rounded-full capitalize">{{ trainee.status }}</span>
+        {% if trainee.current_semester %}<span class="bg-white/15 text-white text-xs px-2.5 py-1 rounded-full">Semester {{ trainee.current_semester }}</span>{% endif %}
+      </div>
+    </div>
+    <div class="flex gap-2 flex-shrink-0">
+      <a href="{{ url_for('media.upload') }}" class="bg-white text-blue-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-blue-50 transition-colors flex items-center gap-2">
+        <i class="fas fa-upload"></i> Upload Evidence
+      </a>
+    </div>
+  </div>
+</div>
+
+<!-- Stats -->
+<div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mb-6">
+  {% for label, val, icon, color in [
+    ('Total Uploads', stats.total_media, 'fa-photo-film', 'bg-violet-500'),
+    ('Approved', stats.approved_media, 'fa-check-circle', 'bg-emerald-500'),
+    ('Pending', stats.pending_media, 'fa-clock', 'bg-amber-500'),
+    ('Verified Skills', stats.verified_skills, 'fa-star', 'bg-blue-500'),
+    ('Internships', stats.internships, 'fa-briefcase', 'bg-pink-500'),
+    ('Attendance', stats.attendance_rate|string + '%', 'fa-calendar-check', 'bg-teal-500'),
+  ] %}
+  <div class="stat-card text-center">
+    <div class="w-8 h-8 {{ color }} rounded-lg flex items-center justify-center mx-auto mb-2">
+      <i class="fas {{ icon }} text-white text-xs"></i>
+    </div>
+    <p class="text-xl font-bold text-slate-800">{{ val }}</p>
+    <p class="text-xs text-slate-500">{{ label }}</p>
+  </div>
+  {% endfor %}
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+
+  <!-- Recent Evidence -->
+  <div class="lg:col-span-2 card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+        <i class="fas fa-photo-film text-blue-500"></i> My Recent Evidence
+      </h3>
+      <a href="{{ url_for('trainee_dash.evidence') }}" class="text-xs text-blue-600 hover:underline">View all →</a>
+    </div>
+    {% if recent_media %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+      {% for item in recent_media %}
+      <a href="{{ url_for('media.view', media_id=item.id) }}" class="group block rounded-xl overflow-hidden border border-slate-100 hover:border-blue-200 hover:shadow-md transition-all">
+        <div class="aspect-square bg-slate-100 relative overflow-hidden">
+          {% if item.media_type == 'image' %}
+            <img src="{{ item.thumbnail_url or item.file_url }}" alt="{{ item.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          {% elif item.media_type == 'video' %}
+            <div class="w-full h-full bg-slate-800 flex items-center justify-center"><i class="fas fa-play text-white text-xl"></i></div>
+          {% else %}
+            <div class="w-full h-full flex items-center justify-center bg-red-50"><i class="fas fa-file-pdf text-red-400 text-2xl"></i></div>
+          {% endif %}
+          <span class="absolute top-1.5 right-1.5 badge text-xs {% if item.approval_status=='approved' %}bg-emerald-500 text-white{% elif item.approval_status=='rejected' %}bg-red-500 text-white{% else %}bg-amber-500 text-white{% endif %} capitalize">
+            {{ item.approval_status }}
+          </span>
+        </div>
+        <div class="p-2">
+          <p class="text-xs font-medium text-slate-700 truncate">{{ item.title }}</p>
+          <p class="text-xs text-slate-400">{{ item.created_at[:10] if item.created_at else '' }}</p>
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-10 text-slate-400">
+      <i class="fas fa-photo-film text-4xl mb-3 opacity-20"></i>
+      <p class="text-sm">No evidence uploaded yet.</p>
+      <a href="{{ url_for('media.upload') }}" class="btn-primary mt-3 inline-flex text-xs"><i class="fas fa-upload"></i> Upload Now</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Sidebar -->
+  <div class="space-y-4">
+
+    <!-- Quick Actions -->
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-bolt text-blue-500"></i> Quick Actions
+      </h3>
+      <div class="space-y-2">
+        <a href="{{ url_for('media.upload') }}" class="btn-primary w-full justify-center text-xs py-2.5"><i class="fas fa-upload"></i> Upload Evidence</a>
+        <a href="{{ url_for('trainee_dash.progress') }}" class="btn-secondary w-full justify-center text-xs py-2.5"><i class="fas fa-chart-line"></i> View Progress</a>
+        <a href="{{ url_for('trainee_dash.my_portfolio') }}" class="btn-secondary w-full justify-center text-xs py-2.5"><i class="fas fa-briefcase"></i> My Portfolio</a>
+        <a href="{{ url_for('trainee_dash.settings') }}" class="btn-secondary w-full justify-center text-xs py-2.5"><i class="fas fa-cog"></i> Account Settings</a>
+      </div>
+    </div>
+
+    <!-- Recent Academic -->
+    {% if academic %}
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+          <i class="fas fa-book text-blue-500"></i> Recent Records
+        </h3>
+        <a href="{{ url_for('trainee_dash.progress') }}" class="text-xs text-blue-600 hover:underline">All →</a>
+      </div>
+      <div class="space-y-2">
+        {% for rec in academic %}
+        <div class="flex items-center justify-between text-xs py-1.5 border-b border-slate-50 last:border-0">
+          <div>
+            <p class="font-medium text-slate-700 truncate max-w-32">{{ rec.unit_name }}</p>
+            <p class="text-slate-400">Sem {{ rec.semester }}</p>
+          </div>
+          <span class="badge {% if rec.status=='completed' %}bg-emerald-100 text-emerald-700{% elif rec.status=='failed' %}bg-red-100 text-red-700{% else %}bg-slate-100 text-slate-600{% endif %} capitalize">{{ rec.grade or rec.status }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Internships -->
+    {% if internships %}
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-briefcase text-blue-500"></i> Internships
+      </h3>
+      {% for intern in internships %}
+      <div class="text-xs mb-2 pb-2 border-b border-slate-50 last:border-0">
+        <p class="font-medium text-slate-700">{{ intern.company_name }}</p>
+        <p class="text-slate-400">{{ intern.location_name or '' }}</p>
+        <span class="badge {% if intern.status=='active' %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-600{% endif %} capitalize mt-1">{{ intern.status }}</span>
+      </div>
+      {% endfor %}
+    </div>
+    {% endif %}
+
+  </div>
+</div>
+{% endblock %}

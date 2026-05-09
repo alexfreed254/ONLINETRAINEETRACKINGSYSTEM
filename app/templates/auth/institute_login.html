@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Institute Login{% endblock %}
+{% block guest_content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-emerald-950 to-slate-900 flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-emerald-600 rounded-2xl mb-4 shadow-xl">
+        <i class="fas fa-building-columns text-white text-2xl"></i>
+      </div>
+      <h1 class="text-2xl font-bold text-white">Institute Portal</h1>
+      <p class="text-slate-400 text-sm mt-1">{{ config.INSTITUTION_NAME }}</p>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+      <h2 class="text-lg font-bold text-slate-800 mb-1">Staff Sign In</h2>
+      <p class="text-slate-500 text-sm mb-6">Admin and instructor access only</p>
+
+      <form method="POST" class="space-y-4">
+        <div>
+          <label class="form-label">Email Address</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-3 flex items-center text-slate-400"><i class="fas fa-envelope text-sm"></i></span>
+            <input type="email" name="email" required placeholder="staff@institute.ac.ke"
+              class="form-input pl-9" value="{{ request.form.get('email','') }}">
+          </div>
+        </div>
+        <div>
+          <label class="form-label">Password</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-3 flex items-center text-slate-400"><i class="fas fa-lock text-sm"></i></span>
+            <input type="password" name="password" id="password" required placeholder="••••••••"
+              class="form-input pl-9 pr-10">
+            <button type="button" onclick="togglePwd()" class="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600">
+              <i class="fas fa-eye text-sm" id="pwd-icon"></i>
+            </button>
+          </div>
+        </div>
+        <button type="submit" class="w-full py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white font-semibold rounded-lg transition-colors text-sm">
+          <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+        </button>
+      </form>
+
+      <div class="mt-5 pt-5 border-t border-slate-100 text-center text-sm">
+        <p class="text-slate-400 text-xs">
+          Trainee?
+          <a href="{{ url_for('auth.trainee_login') }}" class="text-blue-600 hover:underline">Trainee login →</a>
+        </p>
+      </div>
+    </div>
+
+    <p class="text-center mt-4">
+      <a href="{{ url_for('auth.login') }}" class="text-slate-500 text-xs hover:text-slate-300 transition-colors">
+        <i class="fas fa-arrow-left mr-1"></i>Back to portal selector
+      </a>
+    </p>
+  </div>
+</div>
+<script>
+function togglePwd(){
+  const i=document.getElementById('password');
+  const ic=document.getElementById('pwd-icon');
+  if(i.type==='password'){i.type='text';ic.classList.replace('fa-eye','fa-eye-slash');}
+  else{i.type='password';ic.classList.replace('fa-eye-slash','fa-eye');}
+}
+</script>
+{% endblock %}
