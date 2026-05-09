@@ -1,0 +1,276 @@
+{% extends "base.html" %}
+{% block title %}{{ trainee.profiles.full_name if trainee.profiles else "Trainee" }}{% endblock %}
+{% block page_title %}Trainee Profile{% endblock %}
+{% block content %}
+{% set p = trainee.profiles or {} %}
+{% set dept = trainee.departments or {} %}
+{% set course = trainee.courses or {} %}
+{% set is_admin = user.role in ("admin","instructor") %}
+
+<div class="card p-6 mb-6">
+  <div class="flex flex-col sm:flex-row items-start gap-6">
+    <div class="relative flex-shrink-0">
+      {% if p.profile_photo_url %}
+        <img src="{{ p.profile_photo_url }}" class="w-24 h-24 rounded-2xl object-cover shadow" alt="">
+      {% else %}
+        <div class="w-24 h-24 rounded-2xl bg-gradient-to-br from-primary-400 to-primary-700 flex items-center justify-center text-white text-3xl font-bold shadow">
+          {{ p.full_name[0]|upper if p.full_name else "?" }}
+        </div>
+      {% endif %}
+      <span class="absolute -bottom-2 -right-2 badge {% if trainee.status=='active' %}bg-emerald-500 text-white{% elif trainee.status=='graduated' %}bg-blue-500 text-white{% else %}bg-slate-400 text-white{% endif %} capitalize">{{ trainee.status }}</span>
+    </div>
+    <div class="flex-1 min-w-0">
+      <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 class="text-2xl font-bold text-slate-800">{{ p.full_name or "Unknown" }}</h2>
+          <p class="text-slate-500 text-sm mt-0.5">{{ trainee.admission_number }}</p>
+          <div class="flex flex-wrap gap-2 mt-2">
+            {% if dept.name %}<span class="tag"><i class="fas fa-building mr-1"></i>{{ dept.name }}</span>{% endif %}
+            {% if course.name %}<span class="tag"><i class="fas fa-book mr-1"></i>{{ course.name }}</span>{% endif %}
+            {% if p.county_region %}<span class="tag"><i class="fas fa-map-pin mr-1"></i>{{ p.county_region }}</span>{% endif %}
+          </div>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <a href="{{ url_for('portfolio.view', trainee_id=trainee.id) }}" class="btn-primary text-xs"><i class="fas fa-briefcase"></i> Portfolio</a>
+          <a href="{{ url_for('media.upload') }}?trainee_id={{ trainee.id }}" class="btn-secondary text-xs"><i class="fas fa-upload"></i> Upload</a>
+          {% if is_admin %}<a href="{{ url_for('trainees.edit', trainee_id=trainee.id) }}" class="btn-secondary text-xs"><i class="fas fa-edit"></i> Edit</a>{% endif %}
+        </div>
+      </div>
+      <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 mt-4">
+        <div class="bg-slate-50 rounded-xl p-3 text-center"><i class="fas fa-photo-film text-violet-500 text-lg mb-1"></i><p class="text-lg font-bold text-slate-800">{{ stats.media_count }}</p><p class="text-xs text-slate-500">Media</p></div>
+        <div class="bg-slate-50 rounded-xl p-3 text-center"><i class="fas fa-check-circle text-emerald-500 text-lg mb-1"></i><p class="text-lg font-bold text-slate-800">{{ stats.competencies_verified }}</p><p class="text-xs text-slate-500">Verified Skills</p></div>
+        <div class="bg-slate-50 rounded-xl p-3 text-center"><i class="fas fa-calendar-check text-blue-500 text-lg mb-1"></i><p class="text-lg font-bold text-slate-800">{{ stats.attendance_rate }}%</p><p class="text-xs text-slate-500">Attendance</p></div>
+        <div class="bg-slate-50 rounded-xl p-3 text-center"><i class="fas fa-certificate text-amber-500 text-lg mb-1"></i><p class="text-lg font-bold text-slate-800">{{ stats.certifications }}</p><p class="text-xs text-slate-500">Certifications</p></div>
+        <div class="bg-slate-50 rounded-xl p-3 text-center"><i class="fas fa-briefcase text-pink-500 text-lg mb-1"></i><p class="text-lg font-bold text-slate-800">{{ stats.internships }}</p><p class="text-xs text-slate-500">Internships</p></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div x-data="{tab: 'media'}" class="space-y-4">
+  <div class="flex gap-1 bg-slate-100 p-1 rounded-xl w-full overflow-x-auto">
+    <button @click="tab='media'" :class="tab==='media' ? 'bg-white shadow text-primary-700 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all flex-shrink-0"><i class="fas fa-photo-film"></i> Evidence Media</button>
+    <button @click="tab='academic'" :class="tab==='academic' ? 'bg-white shadow text-primary-700 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all flex-shrink-0"><i class="fas fa-book"></i> Academic Records</button>
+    <button @click="tab='competencies'" :class="tab==='competencies' ? 'bg-white shadow text-primary-700 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all flex-shrink-0"><i class="fas fa-star"></i> Competencies</button>
+    <button @click="tab='internships'" :class="tab==='internships' ? 'bg-white shadow text-primary-700 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all flex-shrink-0"><i class="fas fa-briefcase"></i> Internships</button>
+    <button @click="tab='certifications'" :class="tab==='certifications' ? 'bg-white shadow text-primary-700 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all flex-shrink-0"><i class="fas fa-certificate"></i> Certifications</button>
+    <button @click="tab='verifications'" :class="tab==='verifications' ? 'bg-white shadow text-primary-700 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all flex-shrink-0"><i class="fas fa-building"></i> Employer Verifications</button>
+    <button @click="tab='info'" :class="tab==='info' ? 'bg-white shadow text-primary-700 font-semibold' : 'text-slate-500 hover:text-slate-700'" class="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs whitespace-nowrap transition-all flex-shrink-0"><i class="fas fa-user"></i> Personal Info</button>
+  </div>
+
+  <div x-show="tab==='media'">
+    {% if media %}
+    <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      {% for item in media %}
+      <a href="{{ url_for('media.view', media_id=item.id) }}" class="group block rounded-xl overflow-hidden border border-slate-100 hover:border-primary-200 hover:shadow-md transition-all bg-white">
+        <div class="aspect-square bg-slate-100 relative overflow-hidden">
+          {% if item.media_type == 'image' %}
+            <img src="{{ item.thumbnail_url or item.file_url }}" alt="{{ item.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+          {% elif item.media_type == 'video' %}
+            <div class="w-full h-full bg-slate-800 flex items-center justify-center"><i class="fas fa-play text-white text-2xl"></i></div>
+          {% else %}
+            <div class="w-full h-full flex items-center justify-center bg-red-50"><i class="fas fa-file-pdf text-red-400 text-3xl"></i></div>
+          {% endif %}
+        </div>
+        <div class="p-2">
+          <p class="text-xs font-medium text-slate-700 truncate">{{ item.title }}</p>
+          {% if item.category %}<p class="text-xs text-slate-400">{{ item.category }}</p>{% endif %}
+        </div>
+      </a>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-slate-400">
+      <i class="fas fa-photo-film text-4xl mb-3 opacity-20"></i>
+      <p class="text-sm">No media uploaded yet.</p>
+      <a href="{{ url_for('media.upload') }}?trainee_id={{ trainee.id }}" class="btn-primary mt-3 inline-flex text-xs"><i class="fas fa-upload"></i> Upload Evidence</a>
+    </div>
+    {% endif %}
+  </div>
+
+  <div x-show="tab==='academic'">
+    {% if is_admin %}
+    <div class="card p-4 mb-4">
+      <h4 class="text-sm font-semibold text-slate-700 mb-3">Add Academic Record</h4>
+      <form method="POST" action="{{ url_for('trainees.academic', trainee_id=trainee.id) }}" class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+        <div><label class="form-label text-xs">Semester</label><input type="number" name="semester" class="form-input text-xs" min="1" max="12" value="{{ trainee.current_semester or 1 }}"></div>
+        <div><label class="form-label text-xs">Academic Year</label><input type="text" name="academic_year" class="form-input text-xs" placeholder="2024/2025"></div>
+        <div><label class="form-label text-xs">Unit Name *</label><input type="text" name="unit_name" required class="form-input text-xs" placeholder="Electrical Circuits"></div>
+        <div><label class="form-label text-xs">Unit Code</label><input type="text" name="unit_code" class="form-input text-xs" placeholder="EE101"></div>
+        <div><label class="form-label text-xs">Grade</label><input type="text" name="grade" class="form-input text-xs" placeholder="A, B+, C"></div>
+        <div><label class="form-label text-xs">Score (%)</label><input type="number" name="score" class="form-input text-xs" min="0" max="100" step="0.1"></div>
+        <div><label class="form-label text-xs">Status</label><select name="status" class="form-input text-xs"><option value="enrolled">Enrolled</option><option value="completed">Completed</option><option value="failed">Failed</option><option value="deferred">Deferred</option></select></div>
+        <div><label class="form-label text-xs">Remarks</label><input type="text" name="remarks" class="form-input text-xs"></div>
+        <div class="col-span-2 sm:col-span-4 flex justify-end"><button type="submit" class="btn-primary text-xs"><i class="fas fa-plus"></i> Add Record</button></div>
+      </form>
+    </div>
+    {% endif %}
+    {% if academic %}
+    <div class="card overflow-hidden">
+      <table class="w-full text-sm">
+        <thead class="bg-slate-50 border-b border-slate-100">
+          <tr>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-slate-600">Sem</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-slate-600">Unit</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-slate-600">Code</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-slate-600">Grade</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-slate-600">Score</th>
+            <th class="text-left px-4 py-3 text-xs font-semibold text-slate-600">Status</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-slate-50">
+          {% for rec in academic %}
+          <tr class="hover:bg-slate-50">
+            <td class="px-4 py-3 text-xs font-medium">{{ rec.semester }}</td>
+            <td class="px-4 py-3 text-xs">{{ rec.unit_name }}</td>
+            <td class="px-4 py-3 text-xs text-slate-500">{{ rec.unit_code or "—" }}</td>
+            <td class="px-4 py-3"><span class="badge bg-primary-100 text-primary-700 text-xs">{{ rec.grade or "—" }}</span></td>
+            <td class="px-4 py-3 text-xs">{{ rec.score or "—" }}{% if rec.score %}%{% endif %}</td>
+            <td class="px-4 py-3"><span class="badge text-xs {% if rec.status=='completed' %}bg-emerald-100 text-emerald-700{% elif rec.status=='failed' %}bg-red-100 text-red-700{% else %}bg-slate-100 text-slate-600{% endif %} capitalize">{{ rec.status }}</span></td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-slate-400"><i class="fas fa-book text-4xl mb-3 opacity-20"></i><p class="text-sm">No academic records yet.</p></div>
+    {% endif %}
+  </div>
+
+  <div x-show="tab==='competencies'">
+    {% if competencies %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {% for comp in competencies %}
+      {% set c = comp.competencies or {} %}
+      <div class="card p-4">
+        <div class="flex items-start justify-between gap-2">
+          <div><p class="text-sm font-semibold text-slate-800">{{ c.name or "Unknown" }}</p><p class="text-xs text-slate-500 mt-0.5">{{ c.category or "" }}</p></div>
+          <span class="badge text-xs {% if comp.status=='verified' %}bg-emerald-100 text-emerald-700{% elif comp.status=='rejected' %}bg-red-100 text-red-700{% else %}bg-amber-100 text-amber-700{% endif %} capitalize flex-shrink-0">{{ comp.status }}</span>
+        </div>
+        {% if comp.rating %}
+        <div class="flex items-center gap-1 mt-2">
+          {% for i in range(1,6) %}<i class="fas fa-star text-xs {% if i <= comp.rating %}text-amber-400{% else %}text-slate-200{% endif %}"></i>{% endfor %}
+          <span class="text-xs text-slate-500 ml-1">{{ comp.rating }}/5</span>
+        </div>
+        {% endif %}
+        {% if comp.notes %}<p class="text-xs text-slate-500 mt-2">{{ comp.notes }}</p>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-slate-400"><i class="fas fa-star text-4xl mb-3 opacity-20"></i><p class="text-sm">No competencies recorded yet.</p></div>
+    {% endif %}
+  </div>
+
+  <div x-show="tab==='internships'">
+    {% if is_admin %}
+    <div class="card p-4 mb-4">
+      <h4 class="text-sm font-semibold text-slate-700 mb-3">Add Internship</h4>
+      <form method="POST" action="{{ url_for('trainees.add_internship', trainee_id=trainee.id) }}" class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+        <div><label class="form-label text-xs">Company Name *</label><input type="text" name="company_name" required class="form-input text-xs"></div>
+        <div><label class="form-label text-xs">Supervisor Name</label><input type="text" name="supervisor_name" class="form-input text-xs"></div>
+        <div><label class="form-label text-xs">Supervisor Email</label><input type="email" name="supervisor_email" class="form-input text-xs"></div>
+        <div><label class="form-label text-xs">Start Date</label><input type="date" name="start_date" class="form-input text-xs"></div>
+        <div><label class="form-label text-xs">End Date</label><input type="date" name="end_date" class="form-input text-xs"></div>
+        <div><label class="form-label text-xs">Location</label><input type="text" name="location_name" class="form-input text-xs" placeholder="Nairobi Industrial Area"></div>
+        <div class="sm:col-span-3 flex justify-end"><button type="submit" class="btn-primary text-xs"><i class="fas fa-plus"></i> Add Internship</button></div>
+      </form>
+    </div>
+    {% endif %}
+    {% if internships %}
+    <div class="space-y-3">
+      {% for intern in internships %}
+      <div class="card p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="font-semibold text-slate-800">{{ intern.company_name }}</p>
+            {% if intern.supervisor_name %}<p class="text-sm text-slate-500">Supervisor: {{ intern.supervisor_name }}</p>{% endif %}
+            {% if intern.location_name %}<p class="text-xs text-slate-400 mt-1"><i class="fas fa-map-pin mr-1 text-red-400"></i>{{ intern.location_name }}</p>{% endif %}
+            {% if intern.start_date %}<p class="text-xs text-slate-400 mt-1"><i class="fas fa-calendar mr-1"></i>{{ intern.start_date }} → {{ intern.end_date or "Present" }}</p>{% endif %}
+          </div>
+          <span class="badge text-xs {% if intern.status=='active' %}bg-emerald-100 text-emerald-700{% elif intern.status=='completed' %}bg-blue-100 text-blue-700{% else %}bg-slate-100 text-slate-600{% endif %} capitalize flex-shrink-0">{{ intern.status }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-slate-400"><i class="fas fa-briefcase text-4xl mb-3 opacity-20"></i><p class="text-sm">No internship records yet.</p></div>
+    {% endif %}
+  </div>
+
+  <div x-show="tab==='certifications'">
+    {% if certifications %}
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
+      {% for cert in certifications %}
+      <div class="card p-4">
+        <div class="flex items-start gap-3">
+          <div class="w-10 h-10 bg-amber-100 rounded-xl flex items-center justify-center flex-shrink-0"><i class="fas fa-certificate text-amber-600"></i></div>
+          <div class="min-w-0">
+            <p class="font-semibold text-slate-800 text-sm">{{ cert.name }}</p>
+            {% if cert.issuing_body %}<p class="text-xs text-slate-500">{{ cert.issuing_body }}</p>{% endif %}
+            {% if cert.issue_date %}<p class="text-xs text-slate-400 mt-1">{{ cert.issue_date }}</p>{% endif %}
+            {% if cert.is_verified %}<span class="badge bg-emerald-100 text-emerald-700 text-xs mt-1"><i class="fas fa-check mr-1"></i>Verified</span>{% endif %}
+          </div>
+        </div>
+        {% if cert.certificate_url %}<a href="{{ cert.certificate_url }}" target="_blank" class="btn-secondary text-xs mt-3 w-full justify-center"><i class="fas fa-external-link-alt"></i> View Certificate</a>{% endif %}
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-slate-400"><i class="fas fa-certificate text-4xl mb-3 opacity-20"></i><p class="text-sm">No certifications yet.</p></div>
+    {% endif %}
+  </div>
+
+  <div x-show="tab==='verifications'">
+    {% if verifications %}
+    <div class="space-y-3">
+      {% for v in verifications %}
+      <div class="card p-4">
+        <div class="flex items-start justify-between gap-3">
+          <div>
+            <p class="font-semibold text-slate-800">{{ v.employer_name }}</p>
+            <p class="text-sm text-slate-500">{{ v.employer_company or "" }}</p>
+            {% if v.comments %}<p class="text-xs text-slate-500 mt-2 italic">"{{ v.comments }}"</p>{% endif %}
+          </div>
+          <span class="badge text-xs {% if v.status=='verified' %}bg-emerald-100 text-emerald-700{% elif v.status=='rejected' %}bg-red-100 text-red-700{% else %}bg-slate-100 text-slate-600{% endif %} capitalize flex-shrink-0">{{ v.status }}</span>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-slate-400"><i class="fas fa-building text-4xl mb-3 opacity-20"></i><p class="text-sm">No employer verifications yet.</p></div>
+    {% endif %}
+  </div>
+
+  <div x-show="tab==='info'">
+    <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="card p-4">
+        <h4 class="text-sm font-semibold text-slate-700 mb-3">Personal Details</h4>
+        <dl class="space-y-2 text-sm">
+          <div class="flex justify-between"><dt class="text-slate-500">Full Name</dt><dd class="font-medium">{{ p.full_name or "—" }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Email</dt><dd class="font-medium text-xs">{{ p.email or "—" }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Phone</dt><dd class="font-medium">{{ p.phone or "—" }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Gender</dt><dd class="font-medium">{{ p.gender or "—" }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Date of Birth</dt><dd class="font-medium">{{ p.date_of_birth or "—" }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">National ID</dt><dd class="font-medium">{{ p.national_id or "—" }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">County/Region</dt><dd class="font-medium">{{ p.county_region or "—" }}</dd></div>
+        </dl>
+      </div>
+      <div class="card p-4">
+        <h4 class="text-sm font-semibold text-slate-700 mb-3">Academic Details</h4>
+        <dl class="space-y-2 text-sm">
+          <div class="flex justify-between"><dt class="text-slate-500">Admission No.</dt><dd class="font-medium">{{ trainee.admission_number }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Department</dt><dd class="font-medium">{{ dept.name or "—" }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Course</dt><dd class="font-medium">{{ course.name or "—" }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Semester</dt><dd class="font-medium">{{ trainee.current_semester or "—" }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Intake Year</dt><dd class="font-medium">{{ trainee.intake_year or "—" }}</dd></div>
+          <div class="flex justify-between"><dt class="text-slate-500">Graduation Year</dt><dd class="font-medium">{{ trainee.graduation_year or "—" }}</dd></div>
+        </dl>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js" defer></script>
+{% endblock %}

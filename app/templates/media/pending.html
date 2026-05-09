@@ -1,0 +1,75 @@
+{% extends "base.html" %}
+{% block title %}Pending Review{% endblock %}
+{% block page_title %}Pending Media Review{% endblock %}
+{% block content %}
+
+<div class="flex items-center justify-between mb-6">
+  <p class="text-sm text-slate-500">
+    <span class="font-semibold text-slate-700">{{ items|length }}</span> items awaiting review
+  </p>
+</div>
+
+{% if items %}
+<div class="space-y-4">
+  {% for item in items %}
+  {% set t = item.trainees or {} %}
+  {% set p = t.profiles or {} %}
+  {% set dept = t.departments or {} %}
+  <div class="card p-4 flex flex-col sm:flex-row gap-4">
+    <!-- Thumbnail -->
+    <a href="{{ url_for('media.view', media_id=item.id) }}" class="flex-shrink-0">
+      <div class="w-full sm:w-32 h-24 rounded-xl overflow-hidden bg-slate-100">
+        {% if item.media_type == 'image' %}
+          <img src="{{ item.thumbnail_url or item.file_url }}" alt="{{ item.title }}" class="w-full h-full object-cover hover:scale-105 transition-transform">
+        {% elif item.media_type == 'video' %}
+          <div class="w-full h-full bg-slate-800 flex items-center justify-center"><i class="fas fa-play text-white text-xl"></i></div>
+        {% else %}
+          <div class="w-full h-full flex items-center justify-center bg-red-50"><i class="fas fa-file-pdf text-red-400 text-2xl"></i></div>
+        {% endif %}
+      </div>
+    </a>
+
+    <!-- Info -->
+    <div class="flex-1 min-w-0">
+      <div class="flex items-start justify-between gap-2">
+        <div>
+          <a href="{{ url_for('media.view', media_id=item.id) }}" class="font-semibold text-slate-800 hover:text-primary-600 transition-colors">{{ item.title }}</a>
+          <p class="text-xs text-slate-500 mt-0.5">
+            {{ p.full_name or 'Unknown' }}
+            {% if dept.name %} &bull; {{ dept.name }}{% endif %}
+          </p>
+          {% if item.category %}<span class="tag text-xs mt-1">{{ item.category }}</span>{% endif %}
+        </div>
+        <span class="badge bg-amber-100 text-amber-700 text-xs flex-shrink-0">
+          <i class="fas fa-clock mr-1"></i>Pending
+        </span>
+      </div>
+      {% if item.description %}
+      <p class="text-xs text-slate-500 mt-2 line-clamp-2">{{ item.description }}</p>
+      {% endif %}
+      <p class="text-xs text-slate-400 mt-1">Uploaded: {{ item.created_at[:10] if item.created_at else '' }}</p>
+    </div>
+
+    <!-- Actions -->
+    <div class="flex sm:flex-col gap-2 flex-shrink-0">
+      <form method="POST" action="{{ url_for('media.approve', media_id=item.id) }}" class="inline">
+        <input type="hidden" name="action" value="approved">
+        <button type="submit" class="btn-success text-xs w-full"><i class="fas fa-check"></i> Approve</button>
+      </form>
+      <form method="POST" action="{{ url_for('media.approve', media_id=item.id) }}" class="inline">
+        <input type="hidden" name="action" value="rejected">
+        <button type="submit" class="btn-danger text-xs w-full"><i class="fas fa-times"></i> Reject</button>
+      </form>
+      <a href="{{ url_for('media.view', media_id=item.id) }}" class="btn-secondary text-xs w-full text-center"><i class="fas fa-eye"></i> Preview</a>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+{% else %}
+<div class="text-center py-20 text-slate-400">
+  <i class="fas fa-check-circle text-5xl mb-4 opacity-20 text-emerald-400"></i>
+  <p class="text-base font-medium text-emerald-600">All caught up!</p>
+  <p class="text-sm mt-1">No media pending review.</p>
+</div>
+{% endif %}
+{% endblock %}

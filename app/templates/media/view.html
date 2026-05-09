@@ -1,0 +1,163 @@
+{% extends "base.html" %}
+{% block title %}{{ item.title }}{% endblock %}
+{% block page_title %}Media Evidence{% endblock %}
+{% block content %}
+<div class="max-w-5xl mx-auto">
+  <div class="flex items-center gap-3 mb-4">
+    <a href="{{ url_for('media.gallery') }}" class="btn-secondary text-xs"><i class="fas fa-arrow-left"></i> Gallery</a>
+    {% set t = item.trainees or {} %}
+    {% set p = t.profiles or {} %}
+    {% if t.id %}
+    <a href="{{ url_for('trainees.detail', trainee_id=t.id) }}" class="btn-secondary text-xs"><i class="fas fa-user"></i> Trainee Profile</a>
+    {% endif %}
+  </div>
+
+  <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+    <!-- Media Display -->
+    <div class="lg:col-span-2 space-y-4">
+      <div class="card overflow-hidden">
+        {% if item.media_type == 'image' %}
+          <img src="{{ item.file_url }}" alt="{{ item.title }}" class="w-full object-contain max-h-[600px] bg-slate-900">
+        {% elif item.media_type == 'video' %}
+          <video controls class="w-full max-h-[600px] bg-slate-900" poster="{{ item.thumbnail_url or '' }}">
+            <source src="{{ item.file_url }}" type="{{ item.mime_type or 'video/mp4' }}">
+            Your browser does not support video playback.
+          </video>
+        {% else %}
+          <div class="flex flex-col items-center justify-center py-16 bg-slate-50">
+            <i class="fas fa-file-pdf text-red-400 text-6xl mb-4"></i>
+            <p class="text-slate-600 font-medium mb-3">{{ item.file_name or item.title }}</p>
+            <a href="{{ item.file_url }}" target="_blank" class="btn-primary">
+              <i class="fas fa-external-link-alt"></i> Open PDF
+            </a>
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Title & Description -->
+      <div class="card p-5">
+        <div class="flex items-start justify-between gap-3 mb-3">
+          <h1 class="text-xl font-bold text-slate-800">{{ item.title }}</h1>
+          <span class="badge {% if item.approval_status=='approved' %}bg-emerald-100 text-emerald-700{% elif item.approval_status=='rejected' %}bg-red-100 text-red-700{% else %}bg-amber-100 text-amber-700{% endif %} capitalize flex-shrink-0">
+            <i class="fas {% if item.approval_status=='approved' %}fa-check{% elif item.approval_status=='rejected' %}fa-times{% else %}fa-clock{% endif %} mr-1"></i>
+            {{ item.approval_status }}
+          </span>
+        </div>
+
+        {% if item.description %}
+        <p class="text-slate-600 text-sm leading-relaxed mb-4">{{ item.description }}</p>
+        {% endif %}
+
+        {% if item.skill_tags %}
+        <div class="flex flex-wrap gap-2 mb-4">
+          {% for tag in (item.skill_tags or []) %}
+          <span class="tag">#{{ tag }}</span>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="flex flex-wrap gap-4 text-xs text-slate-500 pt-3 border-t border-slate-100">
+          <span><i class="fas fa-eye mr-1"></i>{{ item.view_count or 0 }} views</span>
+          {% if item.category %}<span><i class="fas fa-tag mr-1"></i>{{ item.category }}</span>{% endif %}
+          {% if item.location_name %}<span><i class="fas fa-map-pin mr-1 text-red-400"></i>{{ item.location_name }}</span>{% endif %}
+          <span><i class="fas fa-calendar mr-1"></i>{{ item.created_at[:10] if item.created_at else '' }}</span>
+        </div>
+      </div>
+
+      <!-- Admin Actions -->
+      {% if user.role in ('admin','instructor') and item.approval_status == 'pending' %}
+      <div class="card p-4 border-l-4 border-amber-400">
+        <p class="text-sm font-semibold text-slate-700 mb-3"><i class="fas fa-clock text-amber-500 mr-2"></i>Pending Approval</p>
+        <div class="flex gap-2">
+          <form method="POST" action="{{ url_for('media.approve', media_id=item.id) }}" class="inline">
+            <input type="hidden" name="action" value="approved">
+            <button type="submit" class="btn-success text-xs"><i class="fas fa-check"></i> Approve</button>
+          </form>
+          <form method="POST" action="{{ url_for('media.approve', media_id=item.id) }}" class="inline">
+            <input type="hidden" name="action" value="rejected">
+            <button type="submit" class="btn-danger text-xs"><i class="fas fa-times"></i> Reject</button>
+          </form>
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Delete -->
+      {% if user.id == item.uploader_id or user.role == 'admin' %}
+      <div class="flex justify-end">
+        <form method="POST" action="{{ url_for('media.delete', media_id=item.id) }}" onsubmit="return confirm('Delete this media? This cannot be undone.')">
+          <button type="submit" class="btn-danger text-xs"><i class="fas fa-trash"></i> Delete</button>
+        </form>
+      </div>
+      {% endif %}
+    </div>
+
+    <!-- Sidebar -->
+    <div class="space-y-4">
+      <!-- Uploader Info -->
+      <div class="card p-4">
+        <h3 class="text-sm font-semibold text-slate-700 mb-3">Uploaded By</h3>
+        {% set t = item.trainees or {} %}
+        {% set p = t.profiles or {} %}
+        <div class="flex items-center gap-3">
+          {% if p.profile_photo_url %}
+            <img src="{{ p.profile_photo_url }}" class="w-12 h-12 rounded-xl object-cover" alt="">
+          {% else %}
+            <div class="w-12 h-12 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center text-lg font-bold">
+              {{ p.full_name[0]|upper if p.full_name else '?' }}
+            </div>
+          {% endif %}
+          <div>
+            <p class="font-semibold text-slate-800 text-sm">{{ p.full_name or 'Unknown' }}</p>
+            {% if t.departments %}<p class="text-xs text-slate-500">{{ t.departments.name }}</p>{% endif %}
+            {% if t.courses %}<p class="text-xs text-slate-400">{{ t.courses.name }}</p>{% endif %}
+          </div>
+        </div>
+        {% if t.id %}
+        <a href="{{ url_for('trainees.detail', trainee_id=t.id) }}" class="btn-secondary text-xs w-full justify-center mt-3">
+          <i class="fas fa-user"></i> View Profile
+        </a>
+        <a href="{{ url_for('portfolio.view', trainee_id=t.id) }}" class="btn-primary text-xs w-full justify-center mt-2">
+          <i class="fas fa-briefcase"></i> View Portfolio
+        </a>
+        {% endif %}
+      </div>
+
+      <!-- Metadata -->
+      <div class="card p-4">
+        <h3 class="text-sm font-semibold text-slate-700 mb-3">Details</h3>
+        <dl class="space-y-2 text-xs">
+          <div class="flex justify-between"><dt class="text-slate-500">Type</dt><dd class="font-medium capitalize">{{ item.media_type }}</dd></div>
+          {% if item.file_size %}<div class="flex justify-between"><dt class="text-slate-500">Size</dt><dd class="font-medium">{{ (item.file_size / 1024 / 1024)|round(2) }} MB</dd></div>{% endif %}
+          {% if item.latitude and item.longitude %}
+          <div class="flex justify-between"><dt class="text-slate-500">GPS</dt><dd class="font-medium">{{ item.latitude|round(4) }}, {{ item.longitude|round(4) }}</dd></div>
+          {% endif %}
+          <div class="flex justify-between"><dt class="text-slate-500">Uploaded</dt><dd class="font-medium">{{ item.created_at[:10] if item.created_at else '—' }}</dd></div>
+        </dl>
+      </div>
+
+      <!-- Related Media -->
+      {% if related %}
+      <div class="card p-4">
+        <h3 class="text-sm font-semibold text-slate-700 mb-3">More from this Trainee</h3>
+        <div class="grid grid-cols-2 gap-2">
+          {% for r in related %}
+          <a href="{{ url_for('media.view', media_id=r.id) }}" class="group block rounded-lg overflow-hidden border border-slate-100 hover:border-primary-200 transition-all">
+            <div class="aspect-square bg-slate-100 relative overflow-hidden">
+              {% if r.media_type == 'image' %}
+                <img src="{{ r.thumbnail_url or r.file_url }}" alt="{{ r.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform">
+              {% elif r.media_type == 'video' %}
+                <div class="w-full h-full bg-slate-800 flex items-center justify-center"><i class="fas fa-play text-white text-sm"></i></div>
+              {% else %}
+                <div class="w-full h-full flex items-center justify-center bg-red-50"><i class="fas fa-file-pdf text-red-400"></i></div>
+              {% endif %}
+            </div>
+            <p class="text-xs p-1.5 truncate text-slate-600">{{ r.title }}</p>
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</div>
+{% endblock %}

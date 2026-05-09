@@ -1,0 +1,119 @@
+{% extends "base.html" %}
+{% block title %}Media Gallery{% endblock %}
+{% block page_title %}Media Gallery{% endblock %}
+{% block content %}
+
+<!-- Filters -->
+<div class="card p-4 mb-6">
+  <form method="GET" class="flex flex-wrap gap-3 items-end">
+    <div>
+      <label class="form-label text-xs">Category</label>
+      <select name="category" class="form-input text-xs" onchange="this.form.submit()">
+        <option value="">All Categories</option>
+        {% for cat in categories %}
+        <option value="{{ cat }}" {% if current_category==cat %}selected{% endif %}>{{ cat }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label text-xs">Media Type</label>
+      <select name="type" class="form-input text-xs" onchange="this.form.submit()">
+        <option value="">All Types</option>
+        <option value="image" {% if current_type=='image' %}selected{% endif %}>Images</option>
+        <option value="video" {% if current_type=='video' %}selected{% endif %}>Videos</option>
+        <option value="document" {% if current_type=='document' %}selected{% endif %}>Documents</option>
+      </select>
+    </div>
+    {% if current_category or current_type %}
+    <a href="{{ url_for('media.gallery') }}" class="btn-secondary text-xs self-end">
+      <i class="fas fa-times"></i> Clear
+    </a>
+    {% endif %}
+    <div class="ml-auto self-end">
+      <a href="{{ url_for('media.upload') }}" class="btn-primary text-xs">
+        <i class="fas fa-upload"></i> Upload
+      </a>
+    </div>
+  </form>
+</div>
+
+<div class="flex items-center justify-between mb-4">
+  <p class="text-sm text-slate-500">
+    <span class="font-semibold text-slate-700">{{ total }}</span> items
+    {% if current_category %} in <span class="text-primary-600 font-medium">{{ current_category }}</span>{% endif %}
+  </p>
+  <p class="text-xs text-slate-400">Page {{ page }} of {{ total_pages }}</p>
+</div>
+
+{% if media %}
+<div class="masonry-grid mb-6">
+  {% for item in media %}
+  {% set t = item.trainees or {} %}
+  {% set p = t.profiles or {} %}
+  <div class="masonry-item">
+    <a href="{{ url_for('media.view', media_id=item.id) }}" class="group block rounded-xl overflow-hidden border border-slate-100 hover:border-primary-200 hover:shadow-md transition-all bg-white">
+      <div class="relative bg-slate-100 overflow-hidden">
+        {% if item.media_type == 'image' %}
+          <img src="{{ item.thumbnail_url or item.file_url }}" alt="{{ item.title }}"
+            class="w-full object-cover group-hover:scale-105 transition-transform duration-300 max-h-72">
+        {% elif item.media_type == 'video' %}
+          <div class="aspect-video bg-slate-800 flex items-center justify-center relative">
+            {% if item.thumbnail_url %}<img src="{{ item.thumbnail_url }}" class="absolute inset-0 w-full h-full object-cover opacity-50">{% endif %}
+            <div class="relative z-10 w-10 h-10 bg-white/90 rounded-full flex items-center justify-center shadow">
+              <i class="fas fa-play text-primary-600 ml-0.5 text-sm"></i>
+            </div>
+          </div>
+        {% else %}
+          <div class="aspect-video flex items-center justify-center bg-red-50">
+            <i class="fas fa-file-pdf text-red-400 text-4xl"></i>
+          </div>
+        {% endif %}
+        {% if item.category %}
+        <span class="absolute top-2 left-2 badge bg-black/60 text-white text-xs">{{ item.category }}</span>
+        {% endif %}
+        {% if item.approval_status != 'approved' %}
+        <span class="absolute top-2 right-2 badge {% if item.approval_status=='pending' %}bg-amber-500{% else %}bg-red-500{% endif %} text-white text-xs capitalize">{{ item.approval_status }}</span>
+        {% endif %}
+      </div>
+      <div class="p-3">
+        <p class="text-sm font-semibold text-slate-800 truncate">{{ item.title }}</p>
+        <p class="text-xs text-slate-500 mt-0.5 truncate">
+          {{ p.full_name or 'Unknown' }}
+          {% if item.location_name %} &bull; <i class="fas fa-map-pin text-red-400"></i> {{ item.location_name }}{% endif %}
+        </p>
+        {% if item.skill_tags %}
+        <div class="flex flex-wrap gap-1 mt-1.5">
+          {% for tag in (item.skill_tags or [])[:3] %}<span class="tag">#{{ tag }}</span>{% endfor %}
+        </div>
+        {% endif %}
+        <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-50 text-xs text-slate-400">
+          <span><i class="fas fa-eye mr-1"></i>{{ item.view_count or 0 }}</span>
+          <span>{{ item.created_at[:10] if item.created_at else '' }}</span>
+        </div>
+      </div>
+    </a>
+  </div>
+  {% endfor %}
+</div>
+
+<!-- Pagination -->
+{% if total_pages > 1 %}
+<div class="flex items-center justify-center gap-2">
+  {% if page > 1 %}
+  <a href="?page={{ page-1 }}&category={{ current_category }}&type={{ current_type }}" class="btn-secondary text-xs"><i class="fas fa-chevron-left"></i> Prev</a>
+  {% endif %}
+  <span class="text-sm text-slate-500">{{ page }} / {{ total_pages }}</span>
+  {% if page < total_pages %}
+  <a href="?page={{ page+1 }}&category={{ current_category }}&type={{ current_type }}" class="btn-secondary text-xs">Next <i class="fas fa-chevron-right"></i></a>
+  {% endif %}
+</div>
+{% endif %}
+
+{% else %}
+<div class="text-center py-20 text-slate-400">
+  <i class="fas fa-photo-film text-5xl mb-4 opacity-20"></i>
+  <p class="text-base font-medium">No media found</p>
+  <a href="{{ url_for('media.upload') }}" class="btn-primary mt-4 inline-flex"><i class="fas fa-upload"></i> Upload Evidence</a>
+</div>
+{% endif %}
+{% endblock %}

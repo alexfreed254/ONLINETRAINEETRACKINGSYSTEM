@@ -1,0 +1,91 @@
+{% extends "base.html" %}
+{% block title %}My Profile{% endblock %}
+{% block page_title %}My Profile{% endblock %}
+{% block content %}
+<div class="max-w-3xl mx-auto space-y-6">
+
+  <!-- Profile Header -->
+  <div class="card p-6 flex flex-col sm:flex-row items-center sm:items-start gap-6">
+    <div class="relative flex-shrink-0">
+      {% if profile.profile_photo_url %}
+        <img src="{{ profile.profile_photo_url }}" class="w-24 h-24 rounded-2xl object-cover shadow" alt="">
+      {% else %}
+        <div class="w-24 h-24 rounded-2xl bg-primary-600 flex items-center justify-center text-white text-3xl font-bold shadow">
+          {{ profile.full_name[0]|upper if profile.full_name else 'U' }}
+        </div>
+      {% endif %}
+      <span class="absolute -bottom-2 -right-2 bg-emerald-500 text-white text-xs px-2 py-0.5 rounded-full capitalize">{{ profile.role }}</span>
+    </div>
+    <div class="text-center sm:text-left">
+      <h2 class="text-xl font-bold text-slate-800">{{ profile.full_name }}</h2>
+      <p class="text-slate-500 text-sm">{{ profile.email }}</p>
+      {% if trainee %}
+        <p class="text-slate-500 text-sm mt-1">
+          <i class="fas fa-id-card mr-1"></i>{{ trainee.admission_number }}
+          {% if trainee.courses %} &bull; {{ trainee.courses.name }}{% endif %}
+          {% if trainee.departments %} &bull; {{ trainee.departments.name }}{% endif %}
+        </p>
+      {% endif %}
+      <div class="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
+        {% if profile.county_region %}<span class="tag"><i class="fas fa-map-pin mr-1"></i>{{ profile.county_region }}</span>{% endif %}
+        {% if profile.phone %}<span class="tag"><i class="fas fa-phone mr-1"></i>{{ profile.phone }}</span>{% endif %}
+      </div>
+    </div>
+  </div>
+
+  <!-- Edit Form -->
+  <div class="card p-6">
+    <h3 class="text-base font-semibold text-slate-800 mb-4">Edit Profile</h3>
+    <form method="POST" class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div class="sm:col-span-2">
+        <label class="form-label">Full Name</label>
+        <input type="text" name="full_name" class="form-input" value="{{ profile.full_name or '' }}">
+      </div>
+      <div>
+        <label class="form-label">Phone</label>
+        <input type="tel" name="phone" class="form-input" value="{{ profile.phone or '' }}">
+      </div>
+      <div>
+        <label class="form-label">County / Region</label>
+        <input type="text" name="county_region" class="form-input" value="{{ profile.county_region or '' }}">
+      </div>
+      <div>
+        <label class="form-label">Emergency Contact</label>
+        <input type="text" name="emergency_contact" class="form-input" value="{{ profile.emergency_contact or '' }}">
+      </div>
+      <div>
+        <label class="form-label">Emergency Phone</label>
+        <input type="tel" name="emergency_phone" class="form-input" value="{{ profile.emergency_phone or '' }}">
+      </div>
+      <div class="sm:col-span-2 flex justify-end">
+        <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Academic Info (read-only) -->
+  {% if trainee %}
+  <div class="card p-6">
+    <h3 class="text-base font-semibold text-slate-800 mb-4">Academic Information</h3>
+    <dl class="grid grid-cols-2 sm:grid-cols-3 gap-4 text-sm">
+      <div><dt class="text-slate-500">Admission No.</dt><dd class="font-medium">{{ trainee.admission_number }}</dd></div>
+      <div><dt class="text-slate-500">Status</dt><dd><span class="badge {% if trainee.status=='active' %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-600{% endif %} capitalize">{{ trainee.status }}</span></dd></div>
+      <div><dt class="text-slate-500">Semester</dt><dd class="font-medium">{{ trainee.current_semester }}</dd></div>
+      <div><dt class="text-slate-500">Intake Year</dt><dd class="font-medium">{{ trainee.intake_year or '—' }}</dd></div>
+      <div><dt class="text-slate-500">Graduation Year</dt><dd class="font-medium">{{ trainee.graduation_year or '—' }}</dd></div>
+      {% if trainee.gpa %}<div><dt class="text-slate-500">GPA</dt><dd class="font-medium">{{ trainee.gpa }}</dd></div>{% endif %}
+    </dl>
+  </div>
+  {% endif %}
+
+  <!-- Quick Links -->
+  <div class="flex flex-wrap gap-3">
+    {% if trainee %}
+    <a href="{{ url_for('trainees.detail', trainee_id=trainee.id) }}" class="btn-secondary"><i class="fas fa-user"></i> My Progress</a>
+    <a href="{{ url_for('portfolio.view', trainee_id=trainee.id) }}" class="btn-secondary"><i class="fas fa-briefcase"></i> My Portfolio</a>
+    <a href="{{ url_for('media.upload') }}" class="btn-primary"><i class="fas fa-upload"></i> Upload Evidence</a>
+    {% endif %}
+    <a href="{{ url_for('auth.logout') }}" class="btn-danger"><i class="fas fa-sign-out-alt"></i> Logout</a>
+  </div>
+</div>
+{% endblock %}

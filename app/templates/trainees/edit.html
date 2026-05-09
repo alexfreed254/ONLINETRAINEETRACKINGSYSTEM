@@ -1,0 +1,59 @@
+{% extends "base.html" %}
+{% block title %}Edit Trainee{% endblock %}
+{% block page_title %}Edit Trainee{% endblock %}
+{% block content %}
+{% set p = trainee.profiles or {} %}
+<div class="max-w-3xl mx-auto">
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{{ url_for('trainees.detail', trainee_id=trainee.id) }}" class="btn-secondary text-xs"><i class="fas fa-arrow-left"></i> Back</a>
+    <h2 class="text-lg font-bold text-slate-800">Edit: {{ p.full_name or trainee.admission_number }}</h2>
+  </div>
+  <form method="POST" class="space-y-6">
+    <div class="card p-6">
+      <h3 class="text-sm font-semibold text-slate-700 mb-4">Personal Information</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div class="sm:col-span-2"><label class="form-label">Full Name</label><input type="text" name="full_name" class="form-input" value="{{ p.full_name or '' }}"></div>
+        <div><label class="form-label">Phone</label><input type="tel" name="phone" class="form-input" value="{{ p.phone or '' }}"></div>
+        <div><label class="form-label">Gender</label>
+          <select name="gender" class="form-input">
+            <option value="">Select</option>
+            {% for g in ['Male','Female','Other'] %}<option value="{{ g }}" {% if p.gender==g %}selected{% endif %}>{{ g }}</option>{% endfor %}
+          </select>
+        </div>
+        <div><label class="form-label">County / Region</label><input type="text" name="county_region" class="form-input" value="{{ p.county_region or '' }}"></div>
+        <div><label class="form-label">Emergency Contact</label><input type="text" name="emergency_contact" class="form-input" value="{{ p.emergency_contact or '' }}"></div>
+        <div><label class="form-label">Emergency Phone</label><input type="tel" name="emergency_phone" class="form-input" value="{{ p.emergency_phone or '' }}"></div>
+      </div>
+    </div>
+    <div class="card p-6">
+      <h3 class="text-sm font-semibold text-slate-700 mb-4">Academic Information</h3>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div><label class="form-label">Department</label>
+          <select name="department_id" class="form-input">
+            <option value="">Select department</option>
+            {% for dept in departments %}<option value="{{ dept.id }}" {% if trainee.department_id==dept.id %}selected{% endif %}>{{ dept.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div><label class="form-label">Course</label>
+          <select name="course_id" class="form-input">
+            <option value="">Select course</option>
+            {% for c in courses %}<option value="{{ c.id }}" {% if trainee.course_id==c.id %}selected{% endif %}>{{ c.name }}</option>{% endfor %}
+          </select>
+        </div>
+        <div><label class="form-label">Intake Year</label><input type="number" name="intake_year" class="form-input" value="{{ trainee.intake_year or '' }}" min="2000" max="2099"></div>
+        <div><label class="form-label">Graduation Year</label><input type="number" name="graduation_year" class="form-input" value="{{ trainee.graduation_year or '' }}" min="2000" max="2099"></div>
+        <div><label class="form-label">Current Semester</label><input type="number" name="current_semester" class="form-input" value="{{ trainee.current_semester or 1 }}" min="1" max="12"></div>
+        <div><label class="form-label">Status</label>
+          <select name="status" class="form-input">
+            {% for s in ['active','graduated','suspended','deferred','withdrawn'] %}<option value="{{ s }}" {% if trainee.status==s %}selected{% endif %} class="capitalize">{{ s|capitalize }}</option>{% endfor %}
+          </select>
+        </div>
+      </div>
+    </div>
+    <div class="flex gap-3 justify-end">
+      <a href="{{ url_for('trainees.detail', trainee_id=trainee.id) }}" class="btn-secondary">Cancel</a>
+      <button type="submit" class="btn-primary"><i class="fas fa-save"></i> Save Changes</button>
+    </div>
+  </form>
+</div>
+{% endblock %}

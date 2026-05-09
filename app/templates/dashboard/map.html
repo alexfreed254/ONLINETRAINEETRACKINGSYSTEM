@@ -1,0 +1,174 @@
+{% extends "base.html" %}
+{% block title %}GIS Map{% endblock %}
+{% block page_title %}GIS Skill Deployment Map{% endblock %}
+{% block extra_css %}
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+{% endblock %}
+{% block content %}
+
+<div class="flex flex-col lg:flex-row gap-6">
+
+  <!-- Map Legend / Controls -->
+  <aside class="lg:w-64 flex-shrink-0 space-y-4">
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-layer-group text-primary-500"></i> Map Layers
+      </h3>
+      <div class="space-y-2">
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="toggle-internships" checked class="rounded text-primary-600">
+          <span class="flex items-center gap-2 text-sm text-slate-600">
+            <span class="w-3 h-3 rounded-full bg-blue-500 inline-block"></span> Internship Sites
+          </span>
+        </label>
+        <label class="flex items-center gap-2 cursor-pointer">
+          <input type="checkbox" id="toggle-media" checked class="rounded text-primary-600">
+          <span class="flex items-center gap-2 text-sm text-slate-600">
+            <span class="w-3 h-3 rounded-full bg-emerald-500 inline-block"></span> Media Locations
+          </span>
+        </label>
+      </div>
+    </div>
+
+    <!-- Internship List -->
+    <div class="card p-4 max-h-96 overflow-y-auto scrollbar-thin">
+      <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-briefcase text-primary-500"></i> Internship Sites
+        <span class="badge bg-primary-100 text-primary-700">{{ internships|length }}</span>
+      </h3>
+      <div class="space-y-2">
+        {% for loc in internships %}
+        {% set t = loc.trainees or {} %}
+        {% set p = t.profiles or {} %}
+        <div class="text-xs border-b border-slate-50 pb-2 last:border-0 cursor-pointer hover:bg-slate-50 rounded p-1 transition-colors"
+          onclick="flyTo({{ loc.latitude }}, {{ loc.longitude }}, '{{ loc.company_name }}')">
+          <p class="font-semibold text-slate-700">{{ loc.company_name }}</p>
+          <p class="text-slate-500">{{ p.full_name or 'Unknown trainee' }}</p>
+          <p class="text-slate-400"><i class="fas fa-map-pin mr-1 text-blue-400"></i>{{ loc.location_name or 'Unknown' }}</p>
+          <span class="badge {% if loc.status=='active' %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-500{% endif %} capitalize mt-1">{{ loc.status }}</span>
+        </div>
+        {% else %}
+        <p class="text-slate-400 text-xs">No internship locations recorded.</p>
+        {% endfor %}
+      </div>
+    </div>
+
+    <!-- Media Locations -->
+    {% if media_locations %}
+    <div class="card p-4 max-h-64 overflow-y-auto scrollbar-thin">
+      <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-camera text-primary-500"></i> Media Locations
+        <span class="badge bg-emerald-100 text-emerald-700">{{ media_locations|length }}</span>
+      </h3>
+      <div class="space-y-2">
+        {% for m in media_locations %}
+        <div class="text-xs border-b border-slate-50 pb-2 last:border-0 cursor-pointer hover:bg-slate-50 rounded p-1 transition-colors"
+          onclick="flyTo({{ m.latitude }}, {{ m.longitude }}, '{{ m.title }}')">
+          <p class="font-semibold text-slate-700 truncate">{{ m.title }}</p>
+          <p class="text-slate-400"><i class="fas fa-map-pin mr-1 text-emerald-400"></i>{{ m.location_name }}</p>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </aside>
+
+  <!-- Map -->
+  <div class="flex-1 min-w-0">
+    <div id="map" class="w-full rounded-2xl shadow-sm border border-slate-200" style="height: 600px;"></div>
+    <p class="text-xs text-slate-400 mt-2 text-center">
+      <i class="fas fa-info-circle mr-1"></i>
+      Click markers for details. Blue = Internships, Green = Media evidence locations.
+    </p>
+  </div>
+</div>
+
+{% endblock %}
+{% block extra_js %}
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+const map = L.map('map').setView([-1.286389, 36.817223], 6);
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  attribution: '© OpenStreetMap contributors',
+  maxZoom: 18
+}).addTo(map);
+
+const internshipIcon = L.divIcon({
+  html: '<div class="w-8 h-8 bg-blue-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center"><i class="fas fa-briefcase text-white text-xs"></i></div>',
+  className: '',
+  iconSize: [32, 32],
+  iconAnchor: [16, 16]
+});
+
+const mediaIcon = L.divIcon({
+  html: '<div class="w-8 h-8 bg-emerald-600 rounded-full border-2 border-white shadow-lg flex items-center justify-center"><i class="fas fa-camera text-white text-xs"></i></div>',
+  className: '',
+  iconSize: [32, 32],
+  iconAnchor: [16, 16]
+});
+
+const internshipMarkers = L.layerGroup();
+const mediaMarkers = L.layerGroup();
+
+// Internship markers
+const internships = {{ internships | tojson }};
+internships.forEach(loc => {
+  if(loc.latitude && loc.longitude) {
+    const t = loc.trainees || {};
+    const p = t.profiles || {};
+    const popup = `
+      <div class="p-2 min-w-48">
+        <p class="font-bold text-sm">${loc.company_name}</p>
+        <p class="text-xs text-gray-600">${p.full_name || 'Unknown trainee'}</p>
+        <p class="text-xs text-gray-500 mt-1"><i class="fas fa-map-pin mr-1"></i>${loc.location_name || ''}</p>
+        <span class="inline-block mt-1 px-2 py-0.5 rounded-full text-xs font-medium ${loc.status==='active'?'bg-green-100 text-green-700':'bg-gray-100 text-gray-600'}">${loc.status}</span>
+      </div>`;
+    L.marker([loc.latitude, loc.longitude], {icon: internshipIcon})
+      .bindPopup(popup)
+      .addTo(internshipMarkers);
+  }
+});
+
+// Media markers
+const mediaLocs = {{ media_locations | tojson }};
+mediaLocs.forEach(m => {
+  if(m.latitude && m.longitude) {
+    const t = m.trainees || {};
+    const p = t.profiles || {};
+    const tags = (m.skill_tags || []).map(t => `<span class="inline-block bg-blue-50 text-blue-700 text-xs px-1.5 py-0.5 rounded-full">#${t}</span>`).join(' ');
+    const popup = `
+      <div class="p-2 min-w-48">
+        <p class="font-bold text-sm">${m.title}</p>
+        <p class="text-xs text-gray-500 mt-1"><i class="fas fa-map-pin mr-1"></i>${m.location_name || ''}</p>
+        <div class="mt-1">${tags}</div>
+      </div>`;
+    L.marker([m.latitude, m.longitude], {icon: mediaIcon})
+      .bindPopup(popup)
+      .addTo(mediaMarkers);
+  }
+});
+
+internshipMarkers.addTo(map);
+mediaMarkers.addTo(map);
+
+// Toggle layers
+document.getElementById('toggle-internships').addEventListener('change', function() {
+  this.checked ? internshipMarkers.addTo(map) : map.removeLayer(internshipMarkers);
+});
+document.getElementById('toggle-media').addEventListener('change', function() {
+  this.checked ? mediaMarkers.addTo(map) : map.removeLayer(mediaMarkers);
+});
+
+function flyTo(lat, lng, title) {
+  map.flyTo([lat, lng], 13, {duration: 1.5});
+}
+
+// Fit bounds if markers exist
+const allMarkers = [...internships, ...mediaLocs].filter(m => m.latitude && m.longitude);
+if(allMarkers.length > 0) {
+  const bounds = L.latLngBounds(allMarkers.map(m => [m.latitude, m.longitude]));
+  map.fitBounds(bounds, {padding: [40, 40]});
+}
+</script>
+{% endblock %}

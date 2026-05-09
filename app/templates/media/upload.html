@@ -1,0 +1,165 @@
+{% extends "base.html" %}
+{% block title %}Upload Media{% endblock %}
+{% block page_title %}Upload Evidence Media{% endblock %}
+{% block content %}
+<div class="max-w-2xl mx-auto">
+  <div class="card p-6">
+    <div class="flex items-center gap-3 mb-6">
+      <div class="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center">
+        <i class="fas fa-cloud-upload-alt text-primary-600 text-lg"></i>
+      </div>
+      <div>
+        <h2 class="text-lg font-bold text-slate-800">Upload Skill Evidence</h2>
+        <p class="text-sm text-slate-500">Photos, videos, and documents as proof of competence</p>
+      </div>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data" class="space-y-5" id="upload-form">
+
+      {% if user.role in ('admin','instructor') and trainees_list %}
+      <div>
+        <label class="form-label">Trainee <span class="text-red-500">*</span></label>
+        <select name="trainee_id" class="form-input" required>
+          <option value="">Select trainee</option>
+          {% for t in trainees_list %}
+          {% set p = t.profiles or {} %}
+          <option value="{{ t.id }}" {% if trainee_id==t.id %}selected{% endif %}>
+            {{ p.full_name or 'Unknown' }} ({{ t.admission_number }})
+          </option>
+          {% endfor %}
+        </select>
+      </div>
+      {% elif trainee_id %}
+      <input type="hidden" name="trainee_id" value="{{ trainee_id }}">
+      {% endif %}
+
+      <div>
+        <label class="form-label">Title <span class="text-red-500">*</span></label>
+        <input type="text" name="title" required class="form-input" placeholder="e.g. Electrical Panel Installation – Westlands Site">
+      </div>
+
+      <div>
+        <label class="form-label">Description</label>
+        <textarea name="description" rows="3" class="form-input resize-none" placeholder="Describe what this evidence demonstrates…"></textarea>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Skill Category</label>
+          <select name="category" class="form-input">
+            <option value="">Select category</option>
+            {% for cat in categories %}
+            <option value="{{ cat }}">{{ cat }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div>
+          <label class="form-label">Skill Tags</label>
+          <input type="text" name="skill_tags" class="form-input" placeholder="Wiring, CircuitBreaker, Industrial (comma-separated)">
+        </div>
+      </div>
+
+      <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+        <div class="sm:col-span-3">
+          <label class="form-label">Location Name</label>
+          <input type="text" name="location_name" id="location_name" class="form-input" placeholder="e.g. Nairobi Industrial Area">
+        </div>
+        <div>
+          <label class="form-label">Latitude</label>
+          <input type="number" name="latitude" id="latitude" class="form-input" step="any" placeholder="-1.286389">
+        </div>
+        <div>
+          <label class="form-label">Longitude</label>
+          <input type="number" name="longitude" id="longitude" class="form-input" step="any" placeholder="36.817223">
+        </div>
+        <div class="flex items-end">
+          <button type="button" onclick="getLocation()" class="btn-secondary w-full text-xs">
+            <i class="fas fa-crosshairs"></i> Use My Location
+          </button>
+        </div>
+      </div>
+
+      <!-- File Upload -->
+      <div>
+        <label class="form-label">File <span class="text-red-500">*</span></label>
+        <div id="drop-zone" class="border-2 border-dashed border-slate-300 rounded-xl p-8 text-center hover:border-primary-400 hover:bg-primary-50 transition-all cursor-pointer" onclick="document.getElementById('file-input').click()">
+          <div id="drop-placeholder">
+            <i class="fas fa-cloud-upload-alt text-4xl text-slate-300 mb-3"></i>
+            <p class="text-sm font-medium text-slate-600">Drop file here or click to browse</p>
+            <p class="text-xs text-slate-400 mt-1">JPG, PNG, MP4, MOV, PDF &bull; Max 100MB</p>
+          </div>
+          <div id="file-preview" class="hidden">
+            <i class="fas fa-check-circle text-emerald-500 text-3xl mb-2"></i>
+            <p class="text-sm font-medium text-slate-700" id="file-name"></p>
+            <p class="text-xs text-slate-400" id="file-size"></p>
+          </div>
+        </div>
+        <input type="file" name="file" id="file-input" required accept=".jpg,.jpeg,.png,.gif,.webp,.mp4,.mov,.avi,.webm,.pdf" class="hidden" onchange="previewFile(this)">
+      </div>
+
+      <div class="flex gap-3 justify-end pt-2">
+        <a href="{{ url_for('media.gallery') }}" class="btn-secondary">Cancel</a>
+        <button type="submit" class="btn-primary" id="submit-btn">
+          <i class="fas fa-upload"></i> Upload Evidence
+        </button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Supported formats info -->
+  <div class="mt-4 grid grid-cols-3 gap-3">
+    <div class="card p-3 text-center">
+      <i class="fas fa-image text-violet-500 text-xl mb-1"></i>
+      <p class="text-xs font-medium text-slate-700">Images</p>
+      <p class="text-xs text-slate-400">JPG, PNG, WebP</p>
+    </div>
+    <div class="card p-3 text-center">
+      <i class="fas fa-video text-pink-500 text-xl mb-1"></i>
+      <p class="text-xs font-medium text-slate-700">Videos</p>
+      <p class="text-xs text-slate-400">MP4, MOV, WebM</p>
+    </div>
+    <div class="card p-3 text-center">
+      <i class="fas fa-file-pdf text-red-500 text-xl mb-1"></i>
+      <p class="text-xs font-medium text-slate-700">Documents</p>
+      <p class="text-xs text-slate-400">PDF Reports</p>
+    </div>
+  </div>
+</div>
+{% endblock %}
+{% block extra_js %}
+<script>
+function previewFile(input) {
+  const file = input.files[0];
+  if (!file) return;
+  document.getElementById('drop-placeholder').classList.add('hidden');
+  document.getElementById('file-preview').classList.remove('hidden');
+  document.getElementById('file-name').textContent = file.name;
+  document.getElementById('file-size').textContent = (file.size / 1024 / 1024).toFixed(2) + ' MB';
+}
+
+const dropZone = document.getElementById('drop-zone');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('border-primary-500','bg-primary-50'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('border-primary-500','bg-primary-50'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('border-primary-500','bg-primary-50');
+  const fi = document.getElementById('file-input');
+  fi.files = e.dataTransfer.files;
+  previewFile(fi);
+});
+
+function getLocation() {
+  if (!navigator.geolocation) { alert('Geolocation not supported'); return; }
+  navigator.geolocation.getCurrentPosition(pos => {
+    document.getElementById('latitude').value = pos.coords.latitude.toFixed(6);
+    document.getElementById('longitude').value = pos.coords.longitude.toFixed(6);
+  }, () => alert('Could not get location'));
+}
+
+document.getElementById('upload-form').addEventListener('submit', function() {
+  const btn = document.getElementById('submit-btn');
+  btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Uploading…';
+  btn.disabled = true;
+});
+</script>
+{% endblock %}

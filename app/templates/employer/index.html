@@ -1,0 +1,137 @@
+{% extends "base.html" %}
+{% block title %}Employer Portal{% endblock %}
+{% block page_title %}Employer Verification Portal{% endblock %}
+{% block content %}
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Stats -->
+  <div class="lg:col-span-3 grid grid-cols-2 sm:grid-cols-4 gap-4">
+    <div class="stat-card text-center">
+      <i class="fas fa-clock text-amber-500 text-2xl mb-2"></i>
+      <p class="text-2xl font-bold text-slate-800">{{ stats.pending }}</p>
+      <p class="text-xs text-slate-500">Pending</p>
+    </div>
+    <div class="stat-card text-center">
+      <i class="fas fa-check-circle text-emerald-500 text-2xl mb-2"></i>
+      <p class="text-2xl font-bold text-slate-800">{{ stats.verified }}</p>
+      <p class="text-xs text-slate-500">Verified</p>
+    </div>
+    <div class="stat-card text-center">
+      <i class="fas fa-times-circle text-red-500 text-2xl mb-2"></i>
+      <p class="text-2xl font-bold text-slate-800">{{ stats.rejected }}</p>
+      <p class="text-xs text-slate-500">Rejected</p>
+    </div>
+    <div class="stat-card text-center">
+      <i class="fas fa-list text-blue-500 text-2xl mb-2"></i>
+      <p class="text-2xl font-bold text-slate-800">{{ stats.total }}</p>
+      <p class="text-xs text-slate-500">Total</p>
+    </div>
+  </div>
+
+  <!-- Verifications List -->
+  <div class="lg:col-span-2">
+    <div class="card p-5">
+      <div class="flex items-center justify-between mb-4">
+        <h2 class="text-base font-bold text-slate-800 flex items-center gap-2">
+          <i class="fas fa-building text-primary-500"></i> Verification Requests
+        </h2>
+        <div class="flex gap-2">
+          {% for status, color in [('all','slate'),('pending','amber'),('verified','emerald'),('rejected','red')] %}
+          <a href="?status={{ status if status != 'all' else '' }}"
+            class="text-xs px-2 py-1 rounded-lg {% if (current_status or 'all')==status %}bg-{{ color }}-100 text-{{ color }}-700 font-medium{% else %}text-slate-500 hover:bg-slate-100{% endif %} capitalize">
+            {{ status }}
+          </a>
+          {% endfor %}
+        </div>
+      </div>
+
+      {% if verifications %}
+      <div class="space-y-3">
+        {% for v in verifications %}
+        {% set t = v.trainees or {} %}
+        {% set p = t.profiles or {} %}
+        <div class="border border-slate-100 rounded-xl p-4 hover:border-primary-200 transition-colors">
+          <div class="flex items-start justify-between gap-3">
+            <div class="flex items-center gap-3">
+              {% if p.profile_photo_url %}
+                <img src="{{ p.profile_photo_url }}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0" alt="">
+              {% else %}
+                <div class="w-10 h-10 rounded-xl bg-primary-100 text-primary-700 flex items-center justify-center font-bold flex-shrink-0">
+                  {{ p.full_name[0]|upper if p.full_name else '?' }}
+                </div>
+              {% endif %}
+              <div>
+                <p class="font-semibold text-slate-800 text-sm">{{ p.full_name or 'Unknown' }}</p>
+                <p class="text-xs text-slate-500">{{ v.employer_name }} &bull; {{ v.employer_company or '' }}</p>
+                <p class="text-xs text-slate-400">{{ v.verification_type|capitalize if v.verification_type else '' }}</p>
+              </div>
+            </div>
+            <span class="badge text-xs
+              {% if v.status=='verified' %}bg-emerald-100 text-emerald-700
+              {% elif v.status=='rejected' %}bg-red-100 text-red-700
+              {% elif v.status=='requires_rework' %}bg-amber-100 text-amber-700
+              {% else %}bg-slate-100 text-slate-600{% endif %} capitalize flex-shrink-0">
+              {{ v.status }}
+            </span>
+          </div>
+          {% if v.comments %}
+          <p class="text-xs text-slate-500 mt-2 italic">"{{ v.comments }}"</p>
+          {% endif %}
+          {% if v.rating %}
+          <div class="flex items-center gap-1 mt-2">
+            {% for i in range(1,6) %}<i class="fas fa-star text-xs {% if i <= v.rating %}text-amber-400{% else %}text-slate-200{% endif %}"></i>{% endfor %}
+          </div>
+          {% endif %}
+          <div class="flex items-center justify-between mt-3 pt-2 border-t border-slate-50">
+            <span class="text-xs text-slate-400">{{ v.created_at[:10] if v.created_at else '' }}</span>
+            <div class="flex gap-2">
+              {% if t.id %}
+              <a href="{{ url_for('trainees.detail', trainee_id=t.id) }}" class="text-xs text-primary-600 hover:underline">View Profile</a>
+              {% endif %}
+              {% if v.status == 'pending' and user.role in ('admin','instructor') %}
+              <form method="POST" action="{{ url_for('employer.update_verification', verification_id=v.id) }}" class="inline">
+                <input type="hidden" name="status" value="verified">
+                <button type="submit" class="text-xs text-emerald-600 hover:underline">Verify</button>
+              </form>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+      {% else %}
+      <div class="text-center py-12 text-slate-400">
+        <i class="fas fa-building text-4xl mb-3 opacity-20"></i>
+        <p class="text-sm">No verification requests yet.</p>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+
+  <!-- Sidebar: Search Trainee -->
+  <div class="space-y-4">
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-search text-primary-500"></i> Find Trainee to Verify
+      </h3>
+      <form method="GET" action="{{ url_for('trainees.index') }}" class="space-y-3">
+        <input type="text" name="search" class="form-input text-xs" placeholder="Name or admission number">
+        <button type="submit" class="btn-primary w-full text-xs justify-center">
+          <i class="fas fa-search"></i> Search Trainees
+        </button>
+      </form>
+    </div>
+
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold text-slate-700 mb-3">Verification Status Guide</h3>
+      <div class="space-y-2 text-xs">
+        <div class="flex items-center gap-2"><span class="badge bg-slate-100 text-slate-600">Pending</span><span class="text-slate-500">Awaiting review</span></div>
+        <div class="flex items-center gap-2"><span class="badge bg-blue-100 text-blue-700">Reviewed</span><span class="text-slate-500">Under assessment</span></div>
+        <div class="flex items-center gap-2"><span class="badge bg-emerald-100 text-emerald-700">Verified</span><span class="text-slate-500">Confirmed & approved</span></div>
+        <div class="flex items-center gap-2"><span class="badge bg-red-100 text-red-700">Rejected</span><span class="text-slate-500">Not approved</span></div>
+        <div class="flex items-center gap-2"><span class="badge bg-amber-100 text-amber-700">Rework</span><span class="text-slate-500">Needs correction</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+{% endblock %}

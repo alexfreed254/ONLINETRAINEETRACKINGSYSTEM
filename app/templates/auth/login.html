@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Login{% endblock %}
+{% block guest_content %}
+<div class="min-h-screen bg-gradient-to-br from-slate-900 via-primary-900 to-slate-900 flex items-center justify-center p-4">
+  <div class="w-full max-w-md">
+    <!-- Logo -->
+    <div class="text-center mb-8">
+      <div class="inline-flex items-center justify-center w-16 h-16 bg-primary-600 rounded-2xl mb-4 shadow-lg">
+        <i class="fas fa-graduation-cap text-white text-2xl"></i>
+      </div>
+      <h1 class="text-2xl font-bold text-white">{{ config.INSTITUTION_NAME }}</h1>
+      <p class="text-slate-400 text-sm mt-1">Technical Skills Evidence & Progress Platform</p>
+    </div>
+
+    <!-- Card -->
+    <div class="bg-white rounded-2xl shadow-2xl p-8">
+      <h2 class="text-xl font-bold text-slate-800 mb-1">Welcome back</h2>
+      <p class="text-slate-500 text-sm mb-6">Sign in to your account to continue</p>
+
+      <form method="POST" action="{{ url_for('auth.login') }}" class="space-y-4">
+        <div>
+          <label class="form-label">Email Address</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-3 flex items-center text-slate-400"><i class="fas fa-envelope text-sm"></i></span>
+            <input type="email" name="email" required placeholder="you@example.com"
+              class="form-input pl-9" value="{{ request.form.get('email','') }}">
+          </div>
+        </div>
+
+        <div>
+          <label class="form-label">Password</label>
+          <div class="relative">
+            <span class="absolute inset-y-0 left-3 flex items-center text-slate-400"><i class="fas fa-lock text-sm"></i></span>
+            <input type="password" name="password" id="password" required placeholder="••••••••"
+              class="form-input pl-9 pr-10">
+            <button type="button" onclick="togglePwd()" class="absolute inset-y-0 right-3 flex items-center text-slate-400 hover:text-slate-600">
+              <i class="fas fa-eye text-sm" id="pwd-icon"></i>
+            </button>
+          </div>
+        </div>
+
+        <button type="submit" class="w-full py-2.5 bg-primary-600 hover:bg-primary-700 text-white font-semibold rounded-lg transition-colors text-sm">
+          <i class="fas fa-sign-in-alt mr-2"></i>Sign In
+        </button>
+      </form>
+
+      <p class="text-center text-sm text-slate-500 mt-6">
+        New trainee?
+        <a href="{{ url_for('auth.register') }}" class="text-primary-600 font-medium hover:underline">Create account</a>
+      </p>
+    </div>
+
+    <p class="text-center text-slate-500 text-xs mt-6">
+      &copy; {{ config.INSTITUTION_NAME }} &mdash; TSEPIP
+    </p>
+  </div>
+</div>
+<script>
+function togglePwd(){
+  const i=document.getElementById('password');
+  const ic=document.getElementById('pwd-icon');
+  if(i.type==='password'){i.type='text';ic.classList.replace('fa-eye','fa-eye-slash');}
+  else{i.type='password';ic.classList.replace('fa-eye-slash','fa-eye');}
+}
+</script>
+{% endblock %}

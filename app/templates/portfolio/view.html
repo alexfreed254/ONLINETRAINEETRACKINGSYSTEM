@@ -1,0 +1,240 @@
+{% extends "base.html" %}
+{% block title %}{{ trainee.profiles.full_name if trainee and trainee.profiles else "Portfolio" }} - Portfolio{% endblock %}
+{% block page_title %}Digital Portfolio{% endblock %}
+{% block content %}
+{% if not trainee %}
+<div class="text-center py-20 text-slate-400">
+  <i class="fas fa-briefcase text-5xl mb-4 opacity-20"></i>
+  <p class="text-base font-medium">Portfolio not found.</p>
+  <a href="{{ url_for('trainees.index') }}" class="btn-secondary mt-4 inline-flex"><i class="fas fa-arrow-left"></i> Back to Trainees</a>
+</div>
+{% else %}
+{% set p = trainee.profiles or {} %}
+{% set dept = trainee.departments or {} %}
+{% set course = trainee.courses or {} %}
+
+<!-- Hero -->
+<div class="bg-gradient-to-br from-slate-900 via-primary-900 to-slate-800 rounded-2xl p-8 mb-6 text-white relative overflow-hidden">
+  <div class="absolute inset-0 opacity-10">
+    <div class="absolute top-4 right-4 w-32 h-32 bg-white rounded-full"></div>
+    <div class="absolute bottom-4 left-4 w-20 h-20 bg-primary-400 rounded-full"></div>
+  </div>
+  <div class="relative flex flex-col sm:flex-row items-center sm:items-start gap-6">
+    {% if p.profile_photo_url %}
+      <img src="{{ p.profile_photo_url }}" class="w-24 h-24 rounded-2xl object-cover border-4 border-white/20 shadow-xl flex-shrink-0" alt="">
+    {% else %}
+      <div class="w-24 h-24 rounded-2xl bg-white/20 flex items-center justify-center text-white text-3xl font-bold border-4 border-white/20 flex-shrink-0">
+        {{ p.full_name[0]|upper if p.full_name else '?' }}
+      </div>
+    {% endif %}
+    <div class="text-center sm:text-left">
+      <h1 class="text-3xl font-bold">{{ p.full_name or 'Unknown' }}</h1>
+      <p class="text-primary-200 mt-1">{{ course.name or 'Technical Trainee' }}</p>
+      <div class="flex flex-wrap gap-2 mt-3 justify-center sm:justify-start">
+        {% if dept.name %}<span class="bg-white/10 text-white text-xs px-3 py-1 rounded-full"><i class="fas fa-building mr-1"></i>{{ dept.name }}</span>{% endif %}
+        {% if p.county_region %}<span class="bg-white/10 text-white text-xs px-3 py-1 rounded-full"><i class="fas fa-map-pin mr-1"></i>{{ p.county_region }}</span>{% endif %}
+        {% if trainee.intake_year %}<span class="bg-white/10 text-white text-xs px-3 py-1 rounded-full"><i class="fas fa-calendar mr-1"></i>{{ trainee.intake_year }}</span>{% endif %}
+        <span class="bg-white/10 text-white text-xs px-3 py-1 rounded-full capitalize"><i class="fas fa-circle mr-1 {% if trainee.status=='active' %}text-emerald-400{% else %}text-slate-400{% endif %}"></i>{{ trainee.status }}</span>
+      </div>
+    </div>
+    <div class="sm:ml-auto flex flex-col gap-2 text-center sm:text-right">
+      <div class="bg-white/10 rounded-xl p-3">
+        <p class="text-2xl font-bold">{{ stats.media_count }}</p>
+        <p class="text-xs text-primary-200">Evidence Items</p>
+      </div>
+      <div class="bg-white/10 rounded-xl p-3">
+        <p class="text-2xl font-bold">{{ stats.competencies_verified }}</p>
+        <p class="text-xs text-primary-200">Verified Skills</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Stats Row -->
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
+  <div class="stat-card text-center">
+    <i class="fas fa-photo-film text-violet-500 text-2xl mb-2"></i>
+    <p class="text-2xl font-bold text-slate-800">{{ stats.media_count }}</p>
+    <p class="text-xs text-slate-500">Evidence Items</p>
+  </div>
+  <div class="stat-card text-center">
+    <i class="fas fa-check-circle text-emerald-500 text-2xl mb-2"></i>
+    <p class="text-2xl font-bold text-slate-800">{{ stats.competencies_verified }}</p>
+    <p class="text-xs text-slate-500">Verified Skills</p>
+  </div>
+  <div class="stat-card text-center">
+    <i class="fas fa-briefcase text-amber-500 text-2xl mb-2"></i>
+    <p class="text-2xl font-bold text-slate-800">{{ stats.internships }}</p>
+    <p class="text-xs text-slate-500">Internships</p>
+  </div>
+  <div class="stat-card text-center">
+    <i class="fas fa-certificate text-pink-500 text-2xl mb-2"></i>
+    <p class="text-2xl font-bold text-slate-800">{{ stats.certifications }}</p>
+    <p class="text-xs text-slate-500">Certifications</p>
+  </div>
+</div>
+
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  <!-- Main Content -->
+  <div class="lg:col-span-2 space-y-6">
+
+    <!-- Evidence Gallery -->
+    {% if media %}
+    <div class="card p-5">
+      <h2 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+        <i class="fas fa-photo-film text-primary-500"></i> Skill Evidence
+        <span class="badge bg-primary-100 text-primary-700">{{ media|length }}</span>
+      </h2>
+      <div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
+        {% for item in media %}
+        <a href="{{ url_for('media.view', media_id=item.id) }}" class="group block rounded-xl overflow-hidden border border-slate-100 hover:border-primary-200 hover:shadow-md transition-all">
+          <div class="aspect-square bg-slate-100 relative overflow-hidden">
+            {% if item.media_type == 'image' %}
+              <img src="{{ item.thumbnail_url or item.file_url }}" alt="{{ item.title }}" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300">
+            {% elif item.media_type == 'video' %}
+              <div class="w-full h-full bg-slate-800 flex items-center justify-center"><i class="fas fa-play text-white text-xl"></i></div>
+            {% else %}
+              <div class="w-full h-full flex items-center justify-center bg-red-50"><i class="fas fa-file-pdf text-red-400 text-2xl"></i></div>
+            {% endif %}
+            {% if item.category %}
+            <span class="absolute bottom-1 left-1 badge bg-black/60 text-white text-xs">{{ item.category }}</span>
+            {% endif %}
+          </div>
+          <div class="p-2">
+            <p class="text-xs font-medium text-slate-700 truncate">{{ item.title }}</p>
+            {% if item.skill_tags %}
+            <div class="flex flex-wrap gap-1 mt-1">
+              {% for tag in (item.skill_tags or [])[:2] %}<span class="tag text-xs">#{{ tag }}</span>{% endfor %}
+            </div>
+            {% endif %}
+          </div>
+        </a>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Internships -->
+    {% if internships %}
+    <div class="card p-5">
+      <h2 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+        <i class="fas fa-briefcase text-primary-500"></i> Work Experience
+      </h2>
+      <div class="space-y-3">
+        {% for intern in internships %}
+        <div class="flex items-start gap-3 p-3 bg-slate-50 rounded-xl">
+          <div class="w-10 h-10 bg-primary-100 rounded-xl flex items-center justify-center flex-shrink-0">
+            <i class="fas fa-building text-primary-600"></i>
+          </div>
+          <div class="flex-1 min-w-0">
+            <p class="font-semibold text-slate-800">{{ intern.company_name }}</p>
+            {% if intern.location_name %}<p class="text-xs text-slate-500"><i class="fas fa-map-pin mr-1 text-red-400"></i>{{ intern.location_name }}</p>{% endif %}
+            {% if intern.start_date %}<p class="text-xs text-slate-400">{{ intern.start_date }} → {{ intern.end_date or 'Present' }}</p>{% endif %}
+          </div>
+          <span class="badge text-xs {% if intern.status=='completed' %}bg-emerald-100 text-emerald-700{% elif intern.status=='active' %}bg-blue-100 text-blue-700{% else %}bg-slate-100 text-slate-600{% endif %} capitalize flex-shrink-0">{{ intern.status }}</span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Employer Verifications -->
+    {% if verifications %}
+    <div class="card p-5">
+      <h2 class="text-base font-bold text-slate-800 mb-4 flex items-center gap-2">
+        <i class="fas fa-star text-primary-500"></i> Employer Reviews
+      </h2>
+      <div class="space-y-3">
+        {% for v in verifications %}
+        {% if v.status == 'verified' %}
+        <div class="p-4 bg-emerald-50 border border-emerald-100 rounded-xl">
+          <div class="flex items-start justify-between gap-2">
+            <div>
+              <p class="font-semibold text-slate-800">{{ v.employer_name }}</p>
+              <p class="text-xs text-slate-500">{{ v.employer_company or '' }}</p>
+            </div>
+            {% if v.rating %}
+            <div class="flex items-center gap-0.5">
+              {% for i in range(1,6) %}<i class="fas fa-star text-xs {% if i <= v.rating %}text-amber-400{% else %}text-slate-200{% endif %}"></i>{% endfor %}
+            </div>
+            {% endif %}
+          </div>
+          {% if v.comments %}<p class="text-sm text-slate-600 mt-2 italic">"{{ v.comments }}"</p>{% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- Sidebar -->
+  <div class="space-y-4">
+    <!-- Contact -->
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold text-slate-700 mb-3">Contact</h3>
+      <div class="space-y-2 text-sm">
+        {% if p.email %}<p class="flex items-center gap-2 text-slate-600"><i class="fas fa-envelope w-4 text-slate-400"></i>{{ p.email }}</p>{% endif %}
+        {% if p.phone %}<p class="flex items-center gap-2 text-slate-600"><i class="fas fa-phone w-4 text-slate-400"></i>{{ p.phone }}</p>{% endif %}
+        {% if p.county_region %}<p class="flex items-center gap-2 text-slate-600"><i class="fas fa-map-pin w-4 text-slate-400"></i>{{ p.county_region }}</p>{% endif %}
+      </div>
+    </div>
+
+    <!-- Competencies -->
+    {% if competencies %}
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold text-slate-700 mb-3">Verified Skills</h3>
+      <div class="space-y-2">
+        {% for comp in competencies %}
+        {% if comp.status == 'verified' %}
+        {% set c = comp.competencies or {} %}
+        <div class="flex items-center justify-between">
+          <span class="text-xs text-slate-700">{{ c.name or 'Unknown' }}</span>
+          {% if comp.rating %}
+          <div class="flex items-center gap-0.5">
+            {% for i in range(1,6) %}<i class="fas fa-star text-xs {% if i <= comp.rating %}text-amber-400{% else %}text-slate-200{% endif %}"></i>{% endfor %}
+          </div>
+          {% else %}
+          <span class="badge bg-emerald-100 text-emerald-700 text-xs"><i class="fas fa-check mr-1"></i>Verified</span>
+          {% endif %}
+        </div>
+        {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Certifications -->
+    {% if certifications %}
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold text-slate-700 mb-3">Certifications</h3>
+      <div class="space-y-2">
+        {% for cert in certifications %}
+        <div class="flex items-center gap-2">
+          <i class="fas fa-certificate text-amber-500 text-sm flex-shrink-0"></i>
+          <div class="min-w-0">
+            <p class="text-xs font-medium text-slate-700 truncate">{{ cert.name }}</p>
+            {% if cert.issuing_body %}<p class="text-xs text-slate-400 truncate">{{ cert.issuing_body }}</p>{% endif %}
+          </div>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+
+    <!-- Actions -->
+    <div class="card p-4 space-y-2">
+      <a href="{{ url_for('trainees.detail', trainee_id=trainee.id) }}" class="btn-secondary w-full justify-center text-xs">
+        <i class="fas fa-user"></i> Full Profile
+      </a>
+      <a href="{{ url_for('employer.verify', trainee_id=trainee.id) }}" class="btn-primary w-full justify-center text-xs">
+        <i class="fas fa-building"></i> Verify as Employer
+      </a>
+      <button onclick="window.print()" class="btn-secondary w-full justify-center text-xs">
+        <i class="fas fa-print"></i> Print / Download
+      </button>
+    </div>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
