@@ -130,7 +130,7 @@ def register():
                 flash(error, 'danger')
             # Use admin client to bypass RLS for reference data
             sb_admin = get_supabase_admin()
-            courses = sb_admin.table('courses').select('id, name, code').eq('is_active', True).order('name').execute().data or []
+            courses = sb_admin.table('courses').select('id, name, code, department_id').eq('is_active', True).order('name').execute().data or []
             departments = sb_admin.table('departments').select('id, name, code').order('name').execute().data or []
             return render_template('auth/register.html', courses=courses, departments=departments, form_data=data)
 
@@ -195,7 +195,7 @@ def register():
     try:
         # Use admin client to bypass RLS — departments/courses are public reference data
         sb_admin = get_supabase_admin()
-        courses = sb_admin.table('courses').select('id, name, code').eq('is_active', True).order('name').execute().data or []
+        courses = sb_admin.table('courses').select('id, name, code, department_id').eq('is_active', True).order('name').execute().data or []
         departments = sb_admin.table('departments').select('id, name, code').order('name').execute().data or []
     except Exception as e:
         courses = []

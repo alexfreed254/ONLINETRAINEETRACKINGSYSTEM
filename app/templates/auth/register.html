@@ -74,28 +74,40 @@
               <input type="text" name="admission_number" required class="form-input" placeholder="ADM/2024/001"
                 value="{{ form_data.get('admission_number','') }}">
             </div>
+
+            <!-- Department -->
             <div>
-              <label class="form-label">Department</label>
-              <select name="department_id" class="form-input">
-                <option value="">Select department</option>
+              <label class="form-label">Department <span class="text-red-500">*</span></label>
+              <select name="department_id" id="dept-select" class="form-input" required onchange="filterCourses(this.value)">
+                <option value="">— Select department —</option>
                 {% for dept in departments %}
-                <option value="{{ dept.id }}" {% if form_data.get('department_id')==dept.id %}selected{% endif %}>
+                <option value="{{ dept.id }}"
+                  {% if form_data.get('department_id') == dept.id %}selected{% endif %}>
                   {{ dept.name }}
                 </option>
                 {% endfor %}
               </select>
             </div>
+
+            <!-- Course / Trade — filtered by department -->
             <div>
-              <label class="form-label">Course / Trade</label>
-              <select name="course_id" class="form-input">
-                <option value="">Select course</option>
+              <label class="form-label">Course / Trade <span class="text-red-500">*</span></label>
+              <select name="course_id" id="course-select" class="form-input" required>
+                <option value="">— Select department first —</option>
                 {% for c in courses %}
-                <option value="{{ c.id }}" {% if form_data.get('course_id')==c.id %}selected{% endif %}>
+                <option value="{{ c.id }}"
+                  data-dept="{{ c.department_id or '' }}"
+                  {% if form_data.get('course_id') == c.id %}selected{% endif %}
+                  style="display:none">
                   {{ c.name }}
                 </option>
                 {% endfor %}
               </select>
+              <p id="course-hint" class="text-xs text-slate-400 mt-1 hidden">
+                <i class="fas fa-info-circle mr-1"></i>No courses found for this department.
+              </p>
             </div>
+
             <div>
               <label class="form-label">Intake Year</label>
               <input type="number" name="intake_year" class="form-input" placeholder="2024" min="2000" max="2099"
@@ -164,4 +176,70 @@
     </div>
   </div>
 </div>
+
+{% block extra_js %}
+<script>
+// All courses with their department_id embedded from server
+const allCourseOptions = Array.from(document.querySelectorAll('#course-select option[data-dept]'));
+
+function filterCourses(deptId) {
+  const courseSelect = document.getElementById('course-select');
+  const hint = document.getElementById('course-hint');
+
+  // Reset course selection
+  courseSelect.value = '';
+
+  // Update placeholder text
+  const placeholder = courseSelect.querySelector('option[value=""]');
+
+  let visibleCount = 0;
+
+  allCourseOptions.forEach(opt => {
+    const optDept = opt.getAttribute('data-dept');
+    if (!deptId) {
+      // No department chosen — hide all courses
+      opt.style.display = 'none';
+      opt.disabled = true;
+    } else if (optDept === deptId) {
+      // Matches selected department — show
+      opt.style.display = '';
+      opt.disabled = false;
+      visibleCount++;
+    } else {
+      // Different department — hide
+      opt.style.display = 'none';
+      opt.disabled = true;
+    }
+  });
+
+  if (!deptId) {
+    placeholder.textContent = '— Select department first —';
+    hint.classList.add('hidden');
+  } else if (visibleCount === 0) {
+    placeholder.textContent = '— No courses for this department —';
+    hint.classList.remove('hidden');
+  } else {
+    placeholder.textContent = `— Select course (${visibleCount} available) —`;
+    hint.classList.add('hidden');
+  }
+}
+
+// On page load: if a department was pre-selected (e.g. form re-render after error),
+// trigger the filter and restore the course selection
+document.addEventListener('DOMContentLoaded', () => {
+  const deptSelect = document.getElementById('dept-select');
+  const courseSelect = document.getElementById('course-select');
+
+  // Remember which course was previously selected (from form_data)
+  const previousCourse = courseSelect.value;
+
+  if (deptSelect.value) {
+    filterCourses(deptSelect.value);
+    // Restore previously selected course after filtering
+    if (previousCourse) {
+      courseSelect.value = previousCourse;
+    }
+  }
+});
+</script>
 {% endblock %}
