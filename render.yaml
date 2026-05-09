@@ -1,7 +1,9 @@
 services:
   - type: web
-    name: trainee-tracking-system
+    name: online-trainee-tracking-system
     env: python
+    runtime: python
+    pythonVersion: "3.11.9"
     buildCommand: pip install -r requirements.txt
     startCommand: gunicorn run:app
     envVars:
@@ -16,4 +18,4 @@ services:
       - key: SUPABASE_SERVICE_KEY
         sync: false
       - key: INSTITUTION_NAME
-        value: Technical Training Institute
+        value: Online Trainee Tracking System
