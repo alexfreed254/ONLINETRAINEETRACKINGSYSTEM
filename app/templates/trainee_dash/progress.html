@@ -65,9 +65,14 @@
 
   <!-- Competencies -->
   <div class="card p-5">
-    <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-      <i class="fas fa-star text-blue-500"></i> Skills & Competencies
-    </h3>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+        <i class="fas fa-star text-blue-500"></i> Skills & Competencies
+      </h3>
+      <a href="{{ url_for('trainee_dash.add_skill') }}" class="btn-primary text-xs">
+        <i class="fas fa-plus"></i> Add Skill
+      </a>
+    </div>
     {% if competencies %}
     <div class="space-y-2">
       {% for comp in competencies %}
@@ -95,9 +100,14 @@
 
   <!-- Internships -->
   <div class="card p-5">
-    <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-      <i class="fas fa-briefcase text-blue-500"></i> Internships
-    </h3>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+        <i class="fas fa-briefcase text-blue-500"></i> Internships
+      </h3>
+      <a href="{{ url_for('trainee_dash.add_internship') }}" class="btn-primary text-xs">
+        <i class="fas fa-plus"></i> Add Internship
+      </a>
+    </div>
     {% if internships %}
     <div class="space-y-3">
       {% for intern in internships %}
@@ -126,9 +136,14 @@
 
   <!-- Certifications -->
   <div class="card p-5">
-    <h3 class="text-sm font-semibold text-slate-700 mb-4 flex items-center gap-2">
-      <i class="fas fa-certificate text-blue-500"></i> Certifications
-    </h3>
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+        <i class="fas fa-certificate text-blue-500"></i> Certifications
+      </h3>
+      <a href="{{ url_for('trainee_dash.add_certification') }}" class="btn-primary text-xs">
+        <i class="fas fa-plus"></i> Add Certification
+      </a>
+    </div>
     {% if certifications %}
     <div class="space-y-2">
       {% for cert in certifications %}

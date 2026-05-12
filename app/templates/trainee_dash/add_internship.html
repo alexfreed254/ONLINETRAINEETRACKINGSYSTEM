@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Add Internship{% endblock %}
+{% block page_title %}Add Internship / Attachment{% endblock %}
+{% block content %}
+<div class="max-w-xl mx-auto">
+  <div class="flex items-center gap-3 mb-6">
+    <a href="{{ url_for('trainee_dash.progress') }}" class="btn-secondary text-xs"><i class="fas fa-arrow-left"></i> Back</a>
+    <p class="text-sm text-slate-500">Record your industrial attachment or internship</p>
+  </div>
+  <div class="card p-6">
+    <div class="flex items-center gap-3 mb-5">
+      <div class="w-10 h-10 bg-pink-100 rounded-xl flex items-center justify-center flex-shrink-0">
+        <i class="fas fa-briefcase text-pink-500"></i>
+      </div>
+      <div>
+        <h2 class="text-base font-bold text-slate-800">Add Internship / Attachment</h2>
+        <p class="text-xs text-slate-500">The institute will verify your submission</p>
+      </div>
+    </div>
+    <form method="POST" class="space-y-4">
+      <div>
+        <label class="form-label">Company / Organisation Name <span class="text-red-500">*</span></label>
+        <input type="text" name="company_name" required class="form-input" placeholder="e.g. Kenya Power, Safaricom, ABC Engineering">
+      </div>
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <div>
+          <label class="form-label">Supervisor Name</label>
+          <input type="text" name="supervisor_name" class="form-input" placeholder="John Kamau">
+        </div>
+        <div>
+          <label class="form-label">Supervisor Email</label>
+          <input type="email" name="supervisor_email" class="form-input" placeholder="supervisor@company.com">
+        </div>
+        <div>
+          <label class="form-label">Supervisor Phone</label>
+          <input type="tel" name="supervisor_phone" class="form-input" placeholder="+254 700 000000">
+        </div>
+        <div>
+          <label class="form-label">Location</label>
+          <input type="text" name="location_name" class="form-input" placeholder="Nairobi Industrial Area">
+        </div>
+        <div>
+          <label class="form-label">Start Date</label>
+          <input type="date" name="start_date" class="form-input">
+        </div>
+        <div>
+          <label class="form-label">End Date</label>
+          <input type="date" name="end_date" class="form-input">
+        </div>
+      </div>
+      <div>
+        <label class="form-label">Description / Tasks Performed</label>
+        <textarea name="description" rows="3" class="form-input resize-none" placeholder="Describe what you did, skills gained, projects worked on..."></textarea>
+      </div>
+      <div class="bg-blue-50 border border-blue-100 rounded-xl p-3 text-xs text-blue-700">
+        <i class="fas fa-info-circle mr-1"></i>
+        Status will be <strong>Pending</strong> until verified by the institute. Upload evidence photos/videos separately.
+      </div>
+      <div class="flex gap-3 justify-end pt-2">
+        <a href="{{ url_for('trainee_dash.progress') }}" class="btn-secondary">Cancel</a>
+        <button type="submit" class="btn-primary"><i class="fas fa-plus"></i> Submit Internship</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

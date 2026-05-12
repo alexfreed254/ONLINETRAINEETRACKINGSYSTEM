@@ -92,6 +92,15 @@
       <a href="{{ url_for('media.upload') }}" class="sidebar-link {% if request.endpoint == 'media.upload' %}active{% endif %}">
         <i class="fas fa-cloud-upload-alt w-4"></i> Upload Evidence
       </a>
+      <a href="{{ url_for('trainee_dash.add_skill') }}" class="sidebar-link {% if request.endpoint == 'trainee_dash.add_skill' %}active{% endif %}">
+        <i class="fas fa-star w-4"></i> Add Skill
+      </a>
+      <a href="{{ url_for('trainee_dash.add_internship') }}" class="sidebar-link {% if request.endpoint == 'trainee_dash.add_internship' %}active{% endif %}">
+        <i class="fas fa-briefcase w-4"></i> Add Internship
+      </a>
+      <a href="{{ url_for('trainee_dash.add_certification') }}" class="sidebar-link {% if request.endpoint == 'trainee_dash.add_certification' %}active{% endif %}">
+        <i class="fas fa-certificate w-4"></i> Add Certification
+      </a>
       <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider px-4 mt-4 mb-2">Settings</p>
       <a href="{{ url_for('trainee_dash.settings') }}" class="sidebar-link {% if request.endpoint == 'trainee_dash.settings' %}active{% endif %}">
         <i class="fas fa-cog w-4"></i> Account Settings
