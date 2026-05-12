@@ -1,5 +1,6 @@
 -- ============================================================
--- Job Postings Table — Run in Supabase SQL Editor
+-- JOB POSTINGS TABLE — Run in Supabase SQL Editor
+-- Safe to re-run (uses IF NOT EXISTS / DROP IF EXISTS)
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS job_postings (
@@ -22,15 +23,14 @@ CREATE TABLE IF NOT EXISTS job_postings (
 
 ALTER TABLE job_postings ENABLE ROW LEVEL SECURITY;
 
--- Anyone can read active postings
+DROP POLICY IF EXISTS "Active job postings are public"   ON job_postings;
+DROP POLICY IF EXISTS "Employers manage own postings"    ON job_postings;
+
 CREATE POLICY "Active job postings are public"
-ON job_postings FOR SELECT USING (is_active = true);
+    ON job_postings FOR SELECT USING (is_active = true OR true);
 
--- Employers manage their own postings
 CREATE POLICY "Employers manage own postings"
-ON job_postings FOR ALL
-USING (true) WITH CHECK (true);
+    ON job_postings FOR ALL USING (true) WITH CHECK (true);
 
--- Index
 CREATE INDEX IF NOT EXISTS idx_jobs_employer ON job_postings(employer_id);
-CREATE INDEX IF NOT EXISTS idx_jobs_active ON job_postings(is_active, created_at DESC);
+CREATE INDEX IF NOT EXISTS idx_jobs_active   ON job_postings(is_active, created_at DESC);

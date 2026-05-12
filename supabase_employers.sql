@@ -1,5 +1,6 @@
 -- ============================================================
 -- EMPLOYERS TABLE — Run in Supabase SQL Editor
+-- Safe to re-run (uses IF NOT EXISTS / DROP IF EXISTS)
 -- ============================================================
 
 CREATE TABLE IF NOT EXISTS employers (
@@ -17,24 +18,26 @@ CREATE TABLE IF NOT EXISTS employers (
     updated_at TIMESTAMPTZ DEFAULT NOW()
 );
 
--- Add employer_id to employer_verifications so we can link to employer accounts
+-- Add employer_id to employer_verifications (safe if already exists)
 ALTER TABLE employer_verifications
     ADD COLUMN IF NOT EXISTS employer_id UUID REFERENCES employers(id);
 
--- RLS
+-- ── RLS ──────────────────────────────────────────────────────
 ALTER TABLE employers ENABLE ROW LEVEL SECURITY;
 
 DROP POLICY IF EXISTS "Employers viewable by authenticated" ON employers;
-DROP POLICY IF EXISTS "Employers can view own record" ON employers;
+DROP POLICY IF EXISTS "Employers can view own record"       ON employers;
+DROP POLICY IF EXISTS "Employers can update own record"     ON employers;
+DROP POLICY IF EXISTS "Trainees view own verifications"     ON employer_verifications;
+DROP POLICY IF EXISTS "Employers can submit verifications"  ON employer_verifications;
 
 CREATE POLICY "Employers viewable by authenticated" ON employers
-    FOR SELECT USING (auth.role() = 'authenticated' OR true);
+    FOR SELECT USING (true);
 
 CREATE POLICY "Employers can update own record" ON employers
     FOR UPDATE USING (profile_id = auth.uid());
 
--- Allow employer_verifications to be read by the trainee they belong to
-DROP POLICY IF EXISTS "Trainees view own verifications" ON employer_verifications;
+-- Allow trainees, admins, and the submitting employer to read verifications
 CREATE POLICY "Trainees view own verifications" ON employer_verifications
     FOR SELECT USING (
         trainee_id IN (SELECT id FROM trainees WHERE profile_id = auth.uid())
@@ -42,7 +45,6 @@ CREATE POLICY "Trainees view own verifications" ON employer_verifications
         OR EXISTS (SELECT 1 FROM employers WHERE profile_id = auth.uid() AND id = employer_verifications.employer_id)
     );
 
--- Employers can insert verifications
-DROP POLICY IF EXISTS "Employers can submit verifications" ON employer_verifications;
+-- Anyone can submit a verification (employer portal is open)
 CREATE POLICY "Employers can submit verifications" ON employer_verifications
     FOR INSERT WITH CHECK (true);
