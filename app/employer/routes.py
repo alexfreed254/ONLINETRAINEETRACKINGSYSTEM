@@ -176,14 +176,12 @@ def logout():
 @employer_required
 def dashboard():
     user = session.get('user')
-    sb = get_supabase()
-    sb_admin = get_supabase_admin()
+    sb = get_supabase_admin()
 
     employer_id = user.get('employer_id', '')
 
     try:
-        # My submitted verifications
-        my_verifications = sb_admin.table('employer_verifications').select(
+        my_verifications = sb.table('employer_verifications').select(
             '*, trainees(*, profiles(full_name, profile_photo_url), departments(name), courses(name))'
         ).eq('employer_id', employer_id).order('created_at', desc=True).execute().data or []
 
@@ -193,8 +191,8 @@ def dashboard():
             'pending': len([v for v in my_verifications if v['status'] == 'pending']),
         }
 
-        # Employer profile
-        emp_profile = sb_admin.table('employers').select('*').eq('id', employer_id).single().execute().data or {}
+        emp_rows = sb.table('employers').select('*').eq('id', employer_id).execute().data or []
+        emp_profile = emp_rows[0] if emp_rows else {}
 
     except Exception:
         my_verifications = []
@@ -259,9 +257,10 @@ def recommend(trainee_id):
     sb_admin = get_supabase_admin()
 
     try:
-        trainee = sb_admin.table('trainees').select(
+        rows = sb_admin.table('trainees').select(
             '*, profiles(*), courses(*), departments(*)'
-        ).eq('id', trainee_id).single().execute().data
+        ).eq('id', trainee_id).execute().data or []
+        trainee = rows[0] if rows else None
     except Exception:
         trainee = None
 
@@ -280,9 +279,10 @@ def recommend(trainee_id):
             return render_template('employer/recommend.html', user=user, trainee=trainee)
 
         try:
-            emp = sb_admin.table('employers').select('company_name, official_email').eq(
+            emp_rows = sb_admin.table('employers').select('company_name, official_email').eq(
                 'id', user['employer_id']
-            ).single().execute().data or {}
+            ).execute().data or []
+            emp = emp_rows[0] if emp_rows else {}
 
             sb_admin.table('employer_verifications').insert({
                 'trainee_id': trainee_id,
