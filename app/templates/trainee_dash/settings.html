@@ -4,7 +4,56 @@
 {% block content %}
 <div class="max-w-2xl mx-auto space-y-6">
 
-  <!-- Profile Update -->
+  <!-- Profile Photo -->
+  <div class="card p-6">
+    <h3 class="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
+      <i class="fas fa-camera text-blue-500"></i> Profile Photo
+    </h3>
+    <div class="flex flex-col sm:flex-row items-center gap-6">
+      <!-- Current photo -->
+      <div class="flex-shrink-0">
+        {% if user.profile_photo_url %}
+          <img src="{{ user.profile_photo_url }}" id="photo-preview"
+               class="w-28 h-28 rounded-2xl object-cover border-4 border-slate-100 shadow" alt="Profile photo">
+        {% else %}
+          <div id="photo-preview-placeholder"
+               class="w-28 h-28 rounded-2xl bg-gradient-to-br from-blue-400 to-blue-700 flex items-center justify-center text-white text-4xl font-bold shadow">
+            {{ user.full_name[0]|upper if user.full_name else '?' }}
+          </div>
+          <img id="photo-preview" class="w-28 h-28 rounded-2xl object-cover border-4 border-slate-100 shadow hidden" alt="">
+        {% endif %}
+      </div>
+
+      <!-- Upload form -->
+      <div class="flex-1 w-full">
+        <form method="POST" action="{{ url_for('trainee_dash.upload_photo') }}"
+              enctype="multipart/form-data" id="photo-form">
+          <div id="photo-drop-zone"
+               class="border-2 border-dashed border-slate-300 rounded-xl p-5 text-center hover:border-blue-400 hover:bg-blue-50 transition-all cursor-pointer"
+               onclick="document.getElementById('photo-input').click()">
+            <i class="fas fa-camera text-3xl text-slate-300 mb-2"></i>
+            <p class="text-sm font-medium text-slate-600">Click to upload passport photo</p>
+            <p class="text-xs text-slate-400 mt-1">JPG, PNG or WebP &bull; Will be cropped to square</p>
+          </div>
+          <input type="file" name="photo" id="photo-input" accept=".jpg,.jpeg,.png,.webp"
+                 class="hidden" onchange="previewPhoto(this)">
+          <div id="photo-actions" class="hidden mt-3 flex gap-2">
+            <button type="submit" class="btn-primary text-xs flex-1 justify-center">
+              <i class="fas fa-upload"></i> Upload Photo
+            </button>
+            <button type="button" onclick="cancelPhoto()" class="btn-secondary text-xs">
+              <i class="fas fa-times"></i> Cancel
+            </button>
+          </div>
+        </form>
+        <p class="text-xs text-slate-400 mt-2">
+          <i class="fas fa-info-circle mr-1"></i>
+          Recommended: clear face photo, plain background, 400×400px minimum.
+        </p>
+      </div>
+    </div>
+  </div>
+  <!-- Profile Info -->
   <div class="card p-6">
     <h3 class="text-base font-semibold text-slate-800 mb-4 flex items-center gap-2">
       <i class="fas fa-user text-blue-500"></i> Personal Information
@@ -109,5 +158,36 @@ function checkMatch() {
 }
 newPw.addEventListener('input', checkMatch);
 confirmPw.addEventListener('input', checkMatch);
+
+// Photo preview
+function previewPhoto(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const preview = document.getElementById('photo-preview');
+    const placeholder = document.getElementById('photo-preview-placeholder');
+    if (preview) {
+      preview.src = e.target.result;
+      preview.classList.remove('hidden');
+    }
+    if (placeholder) placeholder.classList.add('hidden');
+    document.getElementById('photo-drop-zone').innerHTML =
+      '<i class="fas fa-check-circle text-3xl text-emerald-400 mb-2"></i>' +
+      '<p class="text-sm font-medium text-slate-700">' + file.name + '</p>' +
+      '<p class="text-xs text-slate-400">' + (file.size/1024).toFixed(0) + ' KB — ready to upload</p>';
+    document.getElementById('photo-actions').classList.remove('hidden');
+  };
+  reader.readAsDataURL(file);
+}
+
+function cancelPhoto() {
+  document.getElementById('photo-input').value = '';
+  document.getElementById('photo-actions').classList.add('hidden');
+  document.getElementById('photo-drop-zone').innerHTML =
+    '<i class="fas fa-camera text-3xl text-slate-300 mb-2"></i>' +
+    '<p class="text-sm font-medium text-slate-600">Click to upload passport photo</p>' +
+    '<p class="text-xs text-slate-400 mt-1">JPG, PNG or WebP &bull; Will be cropped to square</p>';
+}
 </script>
 {% endblock %}

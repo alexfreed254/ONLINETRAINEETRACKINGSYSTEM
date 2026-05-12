@@ -274,6 +274,74 @@ def add_certification():
 
 
 # ─────────────────────────────────────────────
+# Upload Profile Photo
+# ─────────────────────────────────────────────
+
+@trainee_dash.route('/upload-photo', methods=['POST'])
+@trainee_required
+def upload_photo():
+    user = session.get('user')
+    file = request.files.get('photo')
+
+    if not file or file.filename == '':
+        flash('Please select an image file.', 'danger')
+        return redirect(url_for('trainee_dash.settings'))
+
+    ext = file.filename.rsplit('.', 1)[-1].lower() if '.' in file.filename else ''
+    if ext not in {'jpg', 'jpeg', 'png', 'webp'}:
+        flash('Only JPG, PNG, or WebP images are allowed.', 'danger')
+        return redirect(url_for('trainee_dash.settings'))
+
+    try:
+        from PIL import Image
+        import io, uuid
+        file_bytes = file.read()
+
+        # Crop to square and resize to passport size (400×400)
+        img = Image.open(io.BytesIO(file_bytes)).convert('RGB')
+        w, h = img.size
+        side = min(w, h)
+        left = (w - side) // 2
+        top = (h - side) // 2
+        img = img.crop((left, top, left + side, top + side))
+        img = img.resize((400, 400), Image.LANCZOS)
+
+        out = io.BytesIO()
+        img.save(out, format='JPEG', quality=85)
+        photo_bytes = out.getvalue()
+
+        sb = get_supabase_admin()
+        path = f"profiles/{user['id']}/photo.jpg"
+
+        # Delete old photo first (ignore errors)
+        try:
+            sb.storage.from_('trainee-media').remove([path])
+        except Exception:
+            pass
+
+        sb.storage.from_('trainee-media').upload(
+            path, photo_bytes,
+            {'content-type': 'image/jpeg', 'upsert': 'true'}
+        )
+        photo_url = sb.storage.from_('trainee-media').get_public_url(path)
+
+        # Add cache-buster so browser reloads the new image
+        photo_url = photo_url + f'?t={int(__import__("time").time())}'
+
+        sb.table('profiles').update(
+            {'profile_photo_url': photo_url}
+        ).eq('id', user['id']).execute()
+
+        session['user']['profile_photo_url'] = photo_url
+        flash('Profile photo updated successfully!', 'success')
+
+    except Exception as e:
+        flash(f'Photo upload failed: {str(e)[:100]}', 'danger')
+
+    return redirect(url_for('trainee_dash.settings'))
+
+
+# ─────────────────────────────────────────────
 # Settings (profile + password)
 # ─────────────────────────────────────────────
 
