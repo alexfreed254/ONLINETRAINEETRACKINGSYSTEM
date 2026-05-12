@@ -194,16 +194,22 @@ def dashboard():
         emp_rows = sb.table('employers').select('*').eq('id', employer_id).execute().data or []
         emp_profile = emp_rows[0] if emp_rows else {}
 
+        my_jobs = sb.table('job_postings').select('*').eq(
+            'employer_id', employer_id
+        ).order('created_at', desc=True).limit(5).execute().data or []
+
     except Exception:
         my_verifications = []
         stats = {'total': 0, 'verified': 0, 'pending': 0}
         emp_profile = {}
+        my_jobs = []
 
     return render_template('employer/dashboard.html',
                            user=user,
                            verifications=my_verifications,
                            stats=stats,
-                           emp_profile=emp_profile)
+                           emp_profile=emp_profile,
+                           jobs=my_jobs)
 
 
 # ─────────────────────────────────────────────
@@ -366,3 +372,225 @@ def update_verification(verification_id):
         flash('Update failed.', 'danger')
 
     return redirect(request.referrer or url_for('employer.index'))
+
+
+# ─────────────────────────────────────────────
+# Browse Trainee Profiles (with skill filters)
+# ─────────────────────────────────────────────
+
+@employer.route('/browse')
+@employer_required
+def browse():
+    user = session.get('user')
+    sb = get_supabase_admin()
+
+    dept_filter = request.args.get('department', '')
+    skill_filter = request.args.get('skill', '').strip()
+    course_filter = request.args.get('course', '')
+    status_filter = request.args.get('status', 'active')
+
+    trainees = []
+    departments = []
+    courses = []
+
+    try:
+        query = sb.table('trainees').select(
+            '*, profiles(full_name, profile_photo_url, county_region, email), '
+            'courses(name, code), departments(name)'
+        ).eq('status', status_filter or 'active')
+
+        if dept_filter:
+            query = query.eq('department_id', dept_filter)
+        if course_filter:
+            query = query.eq('course_id', course_filter)
+
+        all_trainees = query.order('created_at', desc=True).execute().data or []
+
+        # Filter by skill tag if provided (check media uploads)
+        if skill_filter:
+            q = skill_filter.lower()
+            # Get trainee IDs that have media with matching skill tags
+            media = sb.table('media_uploads').select(
+                'trainee_id, skill_tags'
+            ).eq('approval_status', 'approved').execute().data or []
+
+            matching_ids = set()
+            for m in media:
+                tags = [t.lower() for t in (m.get('skill_tags') or [])]
+                if any(q in tag for tag in tags):
+                    matching_ids.add(m['trainee_id'])
+
+            # Also check competencies
+            comps = sb.table('trainee_competencies').select(
+                'trainee_id, competencies(name, category)'
+            ).eq('status', 'verified').execute().data or []
+            for c in comps:
+                comp = c.get('competencies') or {}
+                if q in comp.get('name', '').lower() or q in comp.get('category', '').lower():
+                    matching_ids.add(c['trainee_id'])
+
+            all_trainees = [t for t in all_trainees if t['id'] in matching_ids]
+
+        trainees = all_trainees
+        departments = sb.table('departments').select('id, name').execute().data or []
+        courses = sb.table('courses').select('id, name').execute().data or []
+
+    except Exception as e:
+        flash(f'Error loading trainees: {str(e)[:80]}', 'danger')
+
+    return render_template('employer/browse.html',
+                           user=user,
+                           trainees=trainees,
+                           departments=departments,
+                           courses=courses,
+                           dept_filter=dept_filter,
+                           skill_filter=skill_filter,
+                           course_filter=course_filter)
+
+
+# ─────────────────────────────────────────────
+# Job / Internship Postings — List & Create
+# ─────────────────────────────────────────────
+
+@employer.route('/jobs')
+@employer_required
+def jobs():
+    user = session.get('user')
+    sb = get_supabase_admin()
+    employer_id = user.get('employer_id', '')
+
+    try:
+        my_jobs = sb.table('job_postings').select('*').eq(
+            'employer_id', employer_id
+        ).order('created_at', desc=True).execute().data or []
+    except Exception:
+        my_jobs = []
+
+    return render_template('employer/jobs.html', user=user, jobs=my_jobs)
+
+
+@employer.route('/jobs/post', methods=['GET', 'POST'])
+@employer_required
+def post_job():
+    user = session.get('user')
+    sb = get_supabase_admin()
+    employer_id = user.get('employer_id', '')
+
+    if request.method == 'POST':
+        title = request.form.get('title', '').strip()
+        job_type = request.form.get('type', 'job')
+        description = request.form.get('description', '').strip()
+        requirements = request.form.get('requirements', '').strip()
+        skills_raw = request.form.get('skills_required', '')
+        skills = [s.strip() for s in skills_raw.split(',') if s.strip()]
+        location = request.form.get('location', '').strip()
+        salary_range = request.form.get('salary_range', '').strip()
+        deadline = request.form.get('deadline', '') or None
+        slots = request.form.get('slots', '1')
+        dept_pref = request.form.get('department_preference', '').strip()
+
+        if not title or not description:
+            flash('Title and description are required.', 'danger')
+        else:
+            try:
+                sb.table('job_postings').insert({
+                    'employer_id': employer_id,
+                    'title': title,
+                    'type': job_type,
+                    'description': description,
+                    'requirements': requirements or None,
+                    'skills_required': skills,
+                    'department_preference': dept_pref or None,
+                    'location': location or None,
+                    'salary_range': salary_range or None,
+                    'deadline': deadline,
+                    'slots': int(slots) if slots.isdigit() else 1,
+                    'is_active': True,
+                }).execute()
+                flash('Job posting published successfully!', 'success')
+                return redirect(url_for('employer.jobs'))
+            except Exception as e:
+                flash(f'Failed to post job: {str(e)[:100]}', 'danger')
+
+    departments = []
+    try:
+        departments = sb.table('departments').select('id, name').execute().data or []
+    except Exception:
+        pass
+
+    return render_template('employer/post_job.html',
+                           user=user, departments=departments)
+
+
+@employer.route('/jobs/<job_id>/toggle', methods=['POST'])
+@employer_required
+def toggle_job(job_id):
+    user = session.get('user')
+    sb = get_supabase_admin()
+    try:
+        rows = sb.table('job_postings').select('is_active, employer_id').eq('id', job_id).execute().data or []
+        if not rows or rows[0].get('employer_id') != user.get('employer_id'):
+            flash('Not found or permission denied.', 'danger')
+        else:
+            new_state = not rows[0]['is_active']
+            sb.table('job_postings').update({'is_active': new_state}).eq('id', job_id).execute()
+            flash(f'Posting {"activated" if new_state else "deactivated"}.', 'success')
+    except Exception:
+        flash('Action failed.', 'danger')
+    return redirect(url_for('employer.jobs'))
+
+
+@employer.route('/jobs/<job_id>/delete', methods=['POST'])
+@employer_required
+def delete_job(job_id):
+    user = session.get('user')
+    sb = get_supabase_admin()
+    try:
+        rows = sb.table('job_postings').select('employer_id').eq('id', job_id).execute().data or []
+        if not rows or rows[0].get('employer_id') != user.get('employer_id'):
+            flash('Not found or permission denied.', 'danger')
+        else:
+            sb.table('job_postings').delete().eq('id', job_id).execute()
+            flash('Posting deleted.', 'success')
+    except Exception:
+        flash('Delete failed.', 'danger')
+    return redirect(url_for('employer.jobs'))
+
+
+# ─────────────────────────────────────────────
+# Public job board (visible to trainees too)
+# ─────────────────────────────────────────────
+
+@employer.route('/jobs/board')
+def job_board():
+    """Public job board — no login required."""
+    sb = get_supabase_admin()
+    user = session.get('user')
+
+    type_filter = request.args.get('type', '')
+    dept_filter = request.args.get('department', '')
+
+    try:
+        query = sb.table('job_postings').select(
+            '*, employers(company_name, location, industry)'
+        ).eq('is_active', True)
+
+        if type_filter:
+            query = query.eq('type', type_filter)
+
+        jobs = query.order('created_at', desc=True).execute().data or []
+
+        if dept_filter:
+            jobs = [j for j in jobs if (j.get('department_preference') or '') == dept_filter]
+
+        departments = sb.table('departments').select('id, name').execute().data or []
+
+    except Exception:
+        jobs = []
+        departments = []
+
+    return render_template('employer/job_board.html',
+                           user=user, jobs=jobs,
+                           departments=departments,
+                           type_filter=type_filter,
+                           dept_filter=dept_filter)

@@ -5,28 +5,35 @@
 
 <!-- Company Header -->
 <div class="bg-gradient-to-r from-emerald-700 to-emerald-900 rounded-2xl p-6 mb-6 text-white">
-  <div class="flex items-center gap-4">
-    <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-2xl font-bold border-2 border-white/30">
+  <div class="flex flex-col sm:flex-row items-center sm:items-start gap-4">
+    <div class="w-14 h-14 bg-white/20 rounded-2xl flex items-center justify-center text-2xl font-bold border-2 border-white/30 flex-shrink-0">
       {{ user.full_name[0]|upper if user.full_name else 'E' }}
     </div>
-    <div>
+    <div class="flex-1 text-center sm:text-left">
       <h2 class="text-xl font-bold">{{ user.full_name }}</h2>
-      <p class="text-emerald-200 text-sm">{{ emp_profile.location or '' }} {% if emp_profile.industry %}&bull; {{ emp_profile.industry }}{% endif %}</p>
+      <p class="text-emerald-200 text-sm">
+        {{ emp_profile.location or '' }}
+        {% if emp_profile.industry %} &bull; {{ emp_profile.industry }}{% endif %}
+        {% if emp_profile.phone %} &bull; {{ emp_profile.phone }}{% endif %}
+      </p>
     </div>
-    <div class="ml-auto flex gap-2">
-      <a href="{{ url_for('employer.search') }}" class="bg-white text-emerald-700 font-semibold text-sm px-4 py-2 rounded-xl hover:bg-emerald-50 transition-colors flex items-center gap-2">
-        <i class="fas fa-search"></i> Find Trainee
+    <div class="flex flex-wrap gap-2 flex-shrink-0">
+      <a href="{{ url_for('employer.browse') }}" class="bg-white text-emerald-700 font-semibold text-xs px-3 py-2 rounded-xl hover:bg-emerald-50 transition-colors flex items-center gap-1.5">
+        <i class="fas fa-users"></i> Browse Trainees
+      </a>
+      <a href="{{ url_for('employer.post_job') }}" class="bg-white/20 hover:bg-white/30 text-white font-semibold text-xs px-3 py-2 rounded-xl transition-colors flex items-center gap-1.5">
+        <i class="fas fa-plus"></i> Post Job
       </a>
     </div>
   </div>
 </div>
 
 <!-- Stats -->
-<div class="grid grid-cols-3 gap-4 mb-6">
+<div class="grid grid-cols-2 sm:grid-cols-4 gap-4 mb-6">
   <div class="stat-card text-center">
     <i class="fas fa-list text-blue-500 text-2xl mb-2"></i>
     <p class="text-2xl font-bold text-slate-800">{{ stats.total }}</p>
-    <p class="text-xs text-slate-500">Total Submitted</p>
+    <p class="text-xs text-slate-500">Recommendations</p>
   </div>
   <div class="stat-card text-center">
     <i class="fas fa-check-circle text-emerald-500 text-2xl mb-2"></i>
@@ -34,68 +41,137 @@
     <p class="text-xs text-slate-500">Verified</p>
   </div>
   <div class="stat-card text-center">
-    <i class="fas fa-clock text-amber-500 text-2xl mb-2"></i>
+    <i class="fas fa-briefcase text-amber-500 text-2xl mb-2"></i>
+    <p class="text-2xl font-bold text-slate-800">{{ jobs|length }}</p>
+    <p class="text-xs text-slate-500">Job Postings</p>
+  </div>
+  <div class="stat-card text-center">
+    <i class="fas fa-clock text-slate-400 text-2xl mb-2"></i>
     <p class="text-2xl font-bold text-slate-800">{{ stats.pending }}</p>
     <p class="text-xs text-slate-500">Pending</p>
   </div>
 </div>
 
-<!-- My Recommendations -->
-<div class="card p-5">
-  <div class="flex items-center justify-between mb-4">
-    <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
-      <i class="fas fa-star text-emerald-500"></i> My Recommendations
-    </h3>
-    <a href="{{ url_for('employer.search') }}" class="btn-primary text-xs"><i class="fas fa-plus"></i> New Recommendation</a>
-  </div>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
-  {% if verifications %}
-  <div class="space-y-3">
-    {% for v in verifications %}
-    {% set t = v.trainees or {} %}
-    {% set p = t.profiles or {} %}
-    <div class="border border-slate-100 rounded-xl p-4 hover:border-emerald-200 transition-colors">
-      <div class="flex items-start gap-3">
-        {% if p.profile_photo_url %}
-          <img src="{{ p.profile_photo_url }}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0" alt="">
-        {% else %}
-          <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
-            {{ p.full_name[0]|upper if p.full_name else '?' }}
-          </div>
-        {% endif %}
-        <div class="flex-1 min-w-0">
-          <div class="flex items-start justify-between gap-2">
-            <div>
-              <p class="font-semibold text-slate-800 text-sm">{{ p.full_name or 'Unknown' }}</p>
-              <p class="text-xs text-slate-500">{{ (t.departments or {}).name or '' }} &bull; {{ (t.courses or {}).name or '' }}</p>
-            </div>
-            <span class="badge text-xs
-              {% if v.status=='verified' %}bg-emerald-100 text-emerald-700
-              {% elif v.status=='rejected' %}bg-red-100 text-red-700
-              {% else %}bg-slate-100 text-slate-600{% endif %} capitalize flex-shrink-0">
-              {{ v.status }}
-            </span>
-          </div>
-          {% if v.rating %}
-          <div class="flex gap-0.5 mt-1.5">
-            {% for i in range(1,6) %}<i class="fas fa-star text-xs {% if i <= v.rating %}text-amber-400{% else %}text-slate-200{% endif %}"></i>{% endfor %}
-          </div>
-          {% endif %}
-          {% if v.comments %}
-          <p class="text-xs text-slate-500 mt-1.5 italic">"{{ v.comments[:120] }}{% if v.comments|length > 120 %}…{% endif %}"</p>
-          {% endif %}
-          <p class="text-xs text-slate-400 mt-1">{{ v.created_at[:10] if v.created_at else '' }} &bull; {{ v.verification_type|capitalize if v.verification_type else '' }}</p>
-        </div>
+  <!-- Quick Actions -->
+  <div class="space-y-4">
+    <div class="card p-4">
+      <h3 class="text-sm font-semibold text-slate-700 mb-3 flex items-center gap-2">
+        <i class="fas fa-bolt text-emerald-500"></i> Quick Actions
+      </h3>
+      <div class="space-y-2">
+        <a href="{{ url_for('employer.browse') }}" class="btn-primary w-full justify-center text-xs py-2.5">
+          <i class="fas fa-users"></i> Browse Trainee Profiles
+        </a>
+        <a href="{{ url_for('employer.search') }}" class="btn-secondary w-full justify-center text-xs py-2.5">
+          <i class="fas fa-search"></i> Search by Name / ID
+        </a>
+        <a href="{{ url_for('employer.post_job') }}" class="btn-secondary w-full justify-center text-xs py-2.5">
+          <i class="fas fa-plus"></i> Post Job / Internship
+        </a>
+        <a href="{{ url_for('employer.jobs') }}" class="btn-secondary w-full justify-center text-xs py-2.5">
+          <i class="fas fa-briefcase"></i> My Job Postings
+        </a>
+        <a href="{{ url_for('employer.job_board') }}" class="btn-secondary w-full justify-center text-xs py-2.5">
+          <i class="fas fa-globe"></i> Public Job Board
+        </a>
       </div>
     </div>
-    {% endfor %}
+
+    <!-- Active Job Postings -->
+    {% if jobs %}
+    <div class="card p-4">
+      <div class="flex items-center justify-between mb-3">
+        <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+          <i class="fas fa-briefcase text-emerald-500"></i> My Postings
+        </h3>
+        <a href="{{ url_for('employer.jobs') }}" class="text-xs text-emerald-600 hover:underline">Manage →</a>
+      </div>
+      <div class="space-y-2">
+        {% for job in jobs[:4] %}
+        <div class="flex items-center justify-between text-xs py-1.5 border-b border-slate-50 last:border-0">
+          <div class="min-w-0">
+            <p class="font-medium text-slate-700 truncate">{{ job.title }}</p>
+            <p class="text-slate-400 capitalize">{{ job.type }} {% if job.location %}&bull; {{ job.location }}{% endif %}</p>
+          </div>
+          <span class="badge {% if job.is_active %}bg-emerald-100 text-emerald-700{% else %}bg-slate-100 text-slate-500{% endif %} ml-2 flex-shrink-0">
+            {{ 'Active' if job.is_active else 'Closed' }}
+          </span>
+        </div>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
   </div>
-  {% else %}
-  <div class="text-center py-12 text-slate-400">
-    <i class="fas fa-star text-4xl mb-3 opacity-20"></i>
-    <p class="text-sm">No recommendations submitted yet.</p>
-    <a href="{{ url_for('employer.search') }}" class="btn-primary mt-3 inline-flex text-xs"><i class="fas fa-search"></i> Find a Trainee</a>
+
+  <!-- My Recommendations -->
+  <div class="lg:col-span-2 card p-5">
+    <div class="flex items-center justify-between mb-4">
+      <h3 class="text-sm font-semibold text-slate-700 flex items-center gap-2">
+        <i class="fas fa-star text-emerald-500"></i> My Recommendations
+      </h3>
+      <a href="{{ url_for('employer.search') }}" class="btn-primary text-xs"><i class="fas fa-plus"></i> New</a>
+    </div>
+
+    {% if verifications %}
+    <div class="space-y-3">
+      {% for v in verifications %}
+      {% set t = v.trainees or {} %}
+      {% set p = t.profiles or {} %}
+      <div class="border border-slate-100 rounded-xl p-4 hover:border-emerald-200 transition-colors">
+        <div class="flex items-start gap-3">
+          {% if p.profile_photo_url %}
+            <img src="{{ p.profile_photo_url }}" class="w-10 h-10 rounded-xl object-cover flex-shrink-0" alt="">
+          {% else %}
+            <div class="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold flex-shrink-0">
+              {{ p.full_name[0]|upper if p.full_name else '?' }}
+            </div>
+          {% endif %}
+          <div class="flex-1 min-w-0">
+            <div class="flex items-start justify-between gap-2">
+              <div>
+                <p class="font-semibold text-slate-800 text-sm">{{ p.full_name or 'Unknown' }}</p>
+                <p class="text-xs text-slate-500">{{ (t.departments or {}).name or '' }} &bull; {{ (t.courses or {}).name or '' }}</p>
+              </div>
+              <span class="badge text-xs
+                {% if v.status=='verified' %}bg-emerald-100 text-emerald-700
+                {% elif v.status=='rejected' %}bg-red-100 text-red-700
+                {% else %}bg-slate-100 text-slate-600{% endif %} capitalize flex-shrink-0">
+                {{ v.status }}
+              </span>
+            </div>
+            {% if v.rating %}
+            <div class="flex gap-0.5 mt-1">
+              {% for i in range(1,6) %}<i class="fas fa-star text-xs {% if i <= v.rating %}text-amber-400{% else %}text-slate-200{% endif %}"></i>{% endfor %}
+            </div>
+            {% endif %}
+            {% if v.comments %}
+            <p class="text-xs text-slate-500 mt-1 italic line-clamp-2">"{{ v.comments }}"</p>
+            {% endif %}
+            <div class="flex items-center justify-between mt-2 pt-2 border-t border-slate-50">
+              <span class="text-xs text-slate-400">{{ v.created_at[:10] if v.created_at else '' }}</span>
+              {% if t.id %}
+              <a href="{{ url_for('portfolio.view', trainee_id=t.id) }}" class="text-xs text-emerald-600 hover:underline">
+                <i class="fas fa-briefcase mr-1"></i>View Portfolio
+              </a>
+              {% endif %}
+            </div>
+          </div>
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+    {% else %}
+    <div class="text-center py-12 text-slate-400">
+      <i class="fas fa-star text-4xl mb-3 opacity-20"></i>
+      <p class="text-sm">No recommendations yet.</p>
+      <a href="{{ url_for('employer.browse') }}" class="btn-primary mt-3 inline-flex text-xs">
+        <i class="fas fa-users"></i> Browse Trainees
+      </a>
+    </div>
+    {% endif %}
   </div>
-  {% endif %}
+
 </div>
 {% endblock %}

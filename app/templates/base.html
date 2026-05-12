@@ -88,6 +88,9 @@
       <a href="{{ url_for('trainee_dash.my_portfolio') }}" class="sidebar-link">
         <i class="fas fa-briefcase w-4"></i> My Portfolio
       </a>
+      <a href="{{ url_for('employer.job_board') }}" class="sidebar-link {% if request.endpoint == 'employer.job_board' %}active{% endif %}">
+        <i class="fas fa-globe w-4"></i> Job Board
+      </a>
       <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider px-4 mt-4 mb-2">Upload</p>
       <a href="{{ url_for('media.upload') }}" class="sidebar-link {% if request.endpoint == 'media.upload' %}active{% endif %}">
         <i class="fas fa-cloud-upload-alt w-4"></i> Upload Evidence
@@ -112,8 +115,21 @@
       <a href="{{ url_for('employer.dashboard') }}" class="sidebar-link {% if request.endpoint == 'employer.dashboard' %}active{% endif %}">
         <i class="fas fa-home w-4"></i> Dashboard
       </a>
+      <a href="{{ url_for('employer.browse') }}" class="sidebar-link {% if request.endpoint == 'employer.browse' %}active{% endif %}">
+        <i class="fas fa-users w-4"></i> Browse Trainees
+      </a>
       <a href="{{ url_for('employer.search') }}" class="sidebar-link {% if request.endpoint == 'employer.search' %}active{% endif %}">
-        <i class="fas fa-search w-4"></i> Find Trainee
+        <i class="fas fa-search w-4"></i> Search by Name / ID
+      </a>
+      <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider px-4 mt-4 mb-2">Jobs</p>
+      <a href="{{ url_for('employer.post_job') }}" class="sidebar-link {% if request.endpoint == 'employer.post_job' %}active{% endif %}">
+        <i class="fas fa-plus w-4"></i> Post Vacancy
+      </a>
+      <a href="{{ url_for('employer.jobs') }}" class="sidebar-link {% if request.endpoint == 'employer.jobs' %}active{% endif %}">
+        <i class="fas fa-briefcase w-4"></i> My Postings
+      </a>
+      <a href="{{ url_for('employer.job_board') }}" class="sidebar-link {% if request.endpoint == 'employer.job_board' %}active{% endif %}">
+        <i class="fas fa-globe w-4"></i> Job Board
       </a>
 
       {# ── INSTITUTE NAV (admin/instructor) ── #}
