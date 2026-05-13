@@ -1,4 +1,4 @@
-// Thika Technical Training Institute — Online Trainee Tracking System
+// Thika Technical Training Institute — Tracer Study Monitoring System (TSMS)
 
 // Auto-dismiss flash messages after 5 seconds
 document.addEventListener('DOMContentLoaded', () => {

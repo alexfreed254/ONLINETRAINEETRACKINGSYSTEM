@@ -1,6 +1,6 @@
 -- ============================================================
 -- Thika Technical Training Institute
--- Online Trainee Tracking System — Database Schema
+-- Tracer Study Monitoring System (TSMS) — Database Schema
 -- Run this in your Supabase SQL Editor
 -- ============================================================
 

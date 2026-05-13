@@ -88,7 +88,8 @@
       </div>
       {% set user = session.get('user') %}
       {% if user and user.role == 'trainee' %}
-      <a href="{{ url_for('portfolio.view', trainee_id='apply') }}" class="btn-primary text-xs">
+      <a href="mailto:{{ emp.official_email or '' }}?subject=Application: {{ job.title }}&body=Dear {{ emp.company_name or 'Hiring Manager' }},%0A%0AI am interested in the {{ job.title }} position.%0A%0APlease find my portfolio at: [your portfolio link]%0A%0ARegards" 
+         class="btn-primary text-xs">
         <i class="fas fa-paper-plane"></i> Apply
       </a>
       {% elif user and user.role == 'employer' %}

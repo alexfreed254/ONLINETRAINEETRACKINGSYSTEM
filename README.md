@@ -1,4 +1,4 @@
-# Thika Technical Training Institute — Online Trainee Tracking System
+# Thika Technical Training Institute — Tracer Study Monitoring System (TSMS)
 
 A full-stack web application built with Flask and Supabase for tracking trainee progress, skill evidence, and employer verifications.
 
