@@ -572,7 +572,7 @@ def job_board():
 
     try:
         query = sb.table('job_postings').select(
-            '*, employers(company_name, location, industry)'
+            '*, employers(company_name, location, industry, official_email)'
         ).eq('is_active', True)
 
         if type_filter:
@@ -585,12 +585,202 @@ def job_board():
 
         departments = sb.table('departments').select('id, name').execute().data or []
 
+        # If logged-in trainee, fetch their existing applications so we can show status
+        applied_job_ids = set()
+        if user and user.get('role') == 'trainee':
+            trainee_rows = sb.table('trainees').select('id').eq(
+                'profile_id', user['id']
+            ).execute().data or []
+            if trainee_rows:
+                tid = trainee_rows[0]['id']
+                apps = sb.table('job_applications').select('job_id').eq(
+                    'trainee_id', tid
+                ).execute().data or []
+                applied_job_ids = {a['job_id'] for a in apps}
+
     except Exception:
         jobs = []
         departments = []
+        applied_job_ids = set()
 
     return render_template('employer/job_board.html',
                            user=user, jobs=jobs,
                            departments=departments,
                            type_filter=type_filter,
-                           dept_filter=dept_filter)
+                           dept_filter=dept_filter,
+                           applied_job_ids=applied_job_ids)
+
+
+# ─────────────────────────────────────────────
+# Apply for a job (trainee only)
+# ─────────────────────────────────────────────
+
+@employer.route('/jobs/<job_id>/apply', methods=['POST'])
+def apply_job(job_id):
+    """Trainee submits an application for a job posting."""
+    user = session.get('user')
+    if not user:
+        flash('Please log in to apply for jobs.', 'warning')
+        return redirect(url_for('auth.login'))
+    if user.get('role') != 'trainee':
+        flash('Only trainees can apply for jobs.', 'warning')
+        return redirect(url_for('employer.job_board'))
+
+    sb = get_supabase_admin()
+
+    # Resolve trainee record
+    try:
+        trainee_rows = sb.table('trainees').select('id').eq(
+            'profile_id', user['id']
+        ).execute().data or []
+    except Exception:
+        trainee_rows = []
+
+    if not trainee_rows:
+        flash('Your trainee profile was not found. Contact the institute.', 'danger')
+        return redirect(url_for('employer.job_board'))
+
+    trainee_id = trainee_rows[0]['id']
+    cover_note = request.form.get('cover_note', '').strip()
+
+    try:
+        # Verify the job exists and is active
+        job_rows = sb.table('job_postings').select(
+            'id, title, is_active, employers(company_name)'
+        ).eq('id', job_id).execute().data or []
+
+        if not job_rows:
+            flash('Job posting not found.', 'danger')
+            return redirect(url_for('employer.job_board'))
+
+        job = job_rows[0]
+        if not job.get('is_active'):
+            flash('This job posting is no longer active.', 'warning')
+            return redirect(url_for('employer.job_board'))
+
+        # Check for duplicate application
+        existing = sb.table('job_applications').select('id').eq(
+            'job_id', job_id
+        ).eq('trainee_id', trainee_id).execute().data or []
+
+        if existing:
+            flash('You have already applied for this position.', 'info')
+            return redirect(url_for('employer.job_board'))
+
+        # Insert application
+        sb.table('job_applications').insert({
+            'job_id': job_id,
+            'trainee_id': trainee_id,
+            'cover_note': cover_note or None,
+            'status': 'pending',
+        }).execute()
+
+        emp = job.get('employers') or {}
+        flash(
+            f'Application submitted for "{job["title"]}" at '
+            f'{emp.get("company_name", "the employer")}. Good luck!',
+            'success'
+        )
+
+    except Exception as e:
+        err = str(e)
+        if 'duplicate' in err.lower() or 'unique' in err.lower():
+            flash('You have already applied for this position.', 'info')
+        else:
+            flash(f'Application failed: {err[:120]}', 'danger')
+
+    return redirect(url_for('employer.job_board'))
+
+
+# ─────────────────────────────────────────────
+# Employer: view applications for their jobs
+# ─────────────────────────────────────────────
+
+@employer.route('/applications')
+@employer_required
+def applications():
+    """Employer views all applications received for their job postings."""
+    user = session.get('user')
+    sb = get_supabase_admin()
+    employer_id = user.get('employer_id', '')
+
+    job_filter = request.args.get('job', '')
+    status_filter = request.args.get('status', '')
+
+    apps = []
+    my_jobs = []
+
+    try:
+        my_jobs = sb.table('job_postings').select('id, title').eq(
+            'employer_id', employer_id
+        ).order('created_at', desc=True).execute().data or []
+
+        job_ids = [j['id'] for j in my_jobs]
+
+        if job_ids:
+            query = sb.table('job_applications').select(
+                '*, job_postings(title, type), '
+                'trainees(admission_number, profiles(full_name, profile_photo_url, email, phone), '
+                'departments(name), courses(name))'
+            ).in_('job_id', job_ids)
+
+            if job_filter:
+                query = query.eq('job_id', job_filter)
+            if status_filter:
+                query = query.eq('status', status_filter)
+
+            apps = query.order('applied_at', desc=True).execute().data or []
+
+    except Exception as e:
+        flash(f'Error loading applications: {str(e)[:80]}', 'danger')
+
+    return render_template('employer/applications.html',
+                           user=user, apps=apps,
+                           my_jobs=my_jobs,
+                           job_filter=job_filter,
+                           status_filter=status_filter)
+
+
+@employer.route('/applications/<app_id>/update', methods=['POST'])
+@employer_required
+def update_application(app_id):
+    """Employer updates the status of an application."""
+    user = session.get('user')
+    sb = get_supabase_admin()
+    employer_id = user.get('employer_id', '')
+    new_status = request.form.get('status', 'reviewed')
+
+    valid_statuses = ('pending', 'reviewed', 'shortlisted', 'rejected', 'accepted')
+    if new_status not in valid_statuses:
+        flash('Invalid status.', 'danger')
+        return redirect(url_for('employer.applications'))
+
+    try:
+        # Verify the application belongs to this employer's job
+        app_rows = sb.table('job_applications').select(
+            'id, job_id'
+        ).eq('id', app_id).execute().data or []
+
+        if not app_rows:
+            flash('Application not found.', 'danger')
+            return redirect(url_for('employer.applications'))
+
+        job_rows = sb.table('job_postings').select('employer_id').eq(
+            'id', app_rows[0]['job_id']
+        ).execute().data or []
+
+        if not job_rows or job_rows[0].get('employer_id') != employer_id:
+            flash('Permission denied.', 'danger')
+            return redirect(url_for('employer.applications'))
+
+        sb.table('job_applications').update({
+            'status': new_status,
+            'updated_at': datetime.now().isoformat(),
+        }).eq('id', app_id).execute()
+
+        flash(f'Application status updated to "{new_status}".', 'success')
+
+    except Exception as e:
+        flash(f'Update failed: {str(e)[:80]}', 'danger')
+
+    return redirect(request.referrer or url_for('employer.applications'))

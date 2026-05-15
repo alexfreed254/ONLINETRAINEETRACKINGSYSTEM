@@ -35,7 +35,6 @@
   <p class="text-sm text-slate-500">
     <span class="font-semibold text-slate-700">{{ jobs|length }}</span> active opening(s)
   </p>
-  {% set user = session.get('user') %}
   {% if user and user.role == 'employer' %}
   <a href="{{ url_for('employer.post_job') }}" class="btn-primary text-xs"><i class="fas fa-plus"></i> Post Vacancy</a>
   {% endif %}
@@ -86,14 +85,32 @@
         {% if job.deadline %}<span><i class="fas fa-calendar mr-1"></i>Deadline: {{ job.deadline }}</span>{% endif %}
         {% if job.department_preference %}<span class="ml-2"><i class="fas fa-building mr-1"></i>{{ job.department_preference }}</span>{% endif %}
       </div>
-      {% set user = session.get('user') %}
+
+      {# ── Apply button logic ── #}
       {% if user and user.role == 'trainee' %}
-      <a href="mailto:{{ emp.official_email or '' }}?subject=Application: {{ job.title }}&body=Dear {{ emp.company_name or 'Hiring Manager' }},%0A%0AI am interested in the {{ job.title }} position.%0A%0APlease find my portfolio at: [your portfolio link]%0A%0ARegards" 
-         class="btn-primary text-xs">
-        <i class="fas fa-paper-plane"></i> Apply
-      </a>
+        {% if job.id in applied_job_ids %}
+          {# Already applied — show status badge #}
+          <span class="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-lg bg-emerald-100 text-emerald-700">
+            <i class="fas fa-check-circle"></i> Applied
+          </span>
+        {% else %}
+          {# Show apply modal trigger #}
+          <button type="button"
+                  onclick="openApplyModal('{{ job.id }}', '{{ job.title|replace("'", "\\'") }}', '{{ emp.company_name|replace("'", "\\'") }}')"
+                  class="btn-primary text-xs">
+            <i class="fas fa-paper-plane"></i> Apply
+          </button>
+        {% endif %}
+
       {% elif user and user.role == 'employer' %}
-      <span class="text-xs text-slate-400">Posted {{ job.created_at[:10] if job.created_at else '' }}</span>
+        <span class="text-xs text-slate-400">Posted {{ job.created_at[:10] if job.created_at else '' }}</span>
+
+      {% else %}
+        {# Not logged in — prompt to log in #}
+        <a href="{{ url_for('auth.trainee_login') }}"
+           class="btn-primary text-xs">
+          <i class="fas fa-sign-in-alt"></i> Log in to Apply
+        </a>
       {% endif %}
     </div>
   </div>
@@ -103,10 +120,62 @@
 <div class="text-center py-20 text-slate-400">
   <i class="fas fa-briefcase text-5xl mb-4 opacity-20"></i>
   <p class="text-base font-medium">No vacancies posted yet</p>
-  {% set user = session.get('user') %}
   {% if user and user.role == 'employer' %}
   <a href="{{ url_for('employer.post_job') }}" class="btn-primary mt-4 inline-flex"><i class="fas fa-plus"></i> Post First Vacancy</a>
   {% endif %}
 </div>
 {% endif %}
+
+{# ── Apply Modal ── #}
+{% if user and user.role == 'trainee' %}
+<div id="apply-modal" class="fixed inset-0 z-50 hidden flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm">
+  <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 relative">
+    <button onclick="closeApplyModal()" class="absolute top-4 right-4 text-slate-400 hover:text-slate-600">
+      <i class="fas fa-times text-lg"></i>
+    </button>
+    <div class="mb-4">
+      <h3 class="text-lg font-bold text-slate-800" id="modal-job-title">Apply for Position</h3>
+      <p class="text-sm text-slate-500 mt-0.5" id="modal-company-name"></p>
+    </div>
+    <form id="apply-form" method="POST" action="">
+      <div class="mb-4">
+        <label class="form-label">Cover Note <span class="text-slate-400 font-normal">(optional)</span></label>
+        <textarea name="cover_note" rows="4"
+                  class="form-input resize-none"
+                  placeholder="Briefly introduce yourself and explain why you're a good fit for this role…"></textarea>
+        <p class="text-xs text-slate-400 mt-1">Max 500 characters. Keep it concise and relevant.</p>
+      </div>
+      <div class="flex gap-3">
+        <button type="button" onclick="closeApplyModal()"
+                class="btn-secondary flex-1 justify-center">Cancel</button>
+        <button type="submit"
+                class="btn-primary flex-1 justify-center">
+          <i class="fas fa-paper-plane mr-1"></i> Submit Application
+        </button>
+      </div>
+    </form>
+  </div>
+</div>
+
+<script>
+function openApplyModal(jobId, jobTitle, companyName) {
+  document.getElementById('modal-job-title').textContent = 'Apply: ' + jobTitle;
+  document.getElementById('modal-company-name').textContent = companyName;
+  document.getElementById('apply-form').action = '/employer/jobs/' + jobId + '/apply';
+  document.getElementById('apply-modal').classList.remove('hidden');
+  document.getElementById('apply-modal').classList.add('flex');
+}
+
+function closeApplyModal() {
+  document.getElementById('apply-modal').classList.add('hidden');
+  document.getElementById('apply-modal').classList.remove('flex');
+}
+
+// Close modal on backdrop click
+document.getElementById('apply-modal').addEventListener('click', function(e) {
+  if (e.target === this) closeApplyModal();
+});
+</script>
+{% endif %}
+
 {% endblock %}

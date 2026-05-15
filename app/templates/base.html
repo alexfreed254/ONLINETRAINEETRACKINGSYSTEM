@@ -91,6 +91,9 @@
       <a href="{{ url_for('employer.job_board') }}" class="sidebar-link {% if request.endpoint == 'employer.job_board' %}active{% endif %}">
         <i class="fas fa-globe w-4"></i> Job Board
       </a>
+      <a href="{{ url_for('trainee_dash.my_applications') }}" class="sidebar-link {% if request.endpoint == 'trainee_dash.my_applications' %}active{% endif %}">
+        <i class="fas fa-inbox w-4"></i> My Applications
+      </a>
       <p class="text-slate-500 text-xs font-semibold uppercase tracking-wider px-4 mt-4 mb-2">Upload</p>
       <a href="{{ url_for('media.upload') }}" class="sidebar-link {% if request.endpoint == 'media.upload' %}active{% endif %}">
         <i class="fas fa-cloud-upload-alt w-4"></i> Upload Evidence
@@ -127,6 +130,9 @@
       </a>
       <a href="{{ url_for('employer.jobs') }}" class="sidebar-link {% if request.endpoint == 'employer.jobs' %}active{% endif %}">
         <i class="fas fa-briefcase w-4"></i> My Postings
+      </a>
+      <a href="{{ url_for('employer.applications') }}" class="sidebar-link {% if request.endpoint == 'employer.applications' or request.endpoint == 'employer.update_application' %}active{% endif %}">
+        <i class="fas fa-inbox w-4"></i> Applications
       </a>
       <a href="{{ url_for('employer.job_board') }}" class="sidebar-link {% if request.endpoint == 'employer.job_board' %}active{% endif %}">
         <i class="fas fa-globe w-4"></i> Job Board

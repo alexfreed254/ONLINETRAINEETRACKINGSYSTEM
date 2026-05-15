@@ -1,0 +1,142 @@
+{% extends "base.html" %}
+{% block title %}Job Applications{% endblock %}
+{% block page_title %}Job Applications{% endblock %}
+{% block content %}
+
+<!-- Filters -->
+<div class="card p-4 mb-6">
+  <form method="GET" class="flex flex-wrap gap-3 items-end">
+    <div>
+      <label class="form-label text-xs">Job Posting</label>
+      <select name="job" class="form-input text-xs" onchange="this.form.submit()">
+        <option value="">All Postings</option>
+        {% for j in my_jobs %}
+        <option value="{{ j.id }}" {% if job_filter == j.id %}selected{% endif %}>{{ j.title }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    <div>
+      <label class="form-label text-xs">Status</label>
+      <select name="status" class="form-input text-xs" onchange="this.form.submit()">
+        <option value="">All Statuses</option>
+        {% for s in ['pending','reviewed','shortlisted','accepted','rejected'] %}
+        <option value="{{ s }}" {% if status_filter == s %}selected{% endif %} class="capitalize">{{ s|capitalize }}</option>
+        {% endfor %}
+      </select>
+    </div>
+    {% if job_filter or status_filter %}
+    <a href="{{ url_for('employer.applications') }}" class="btn-secondary text-xs self-end">
+      <i class="fas fa-times"></i> Clear
+    </a>
+    {% endif %}
+  </form>
+</div>
+
+<div class="flex items-center justify-between mb-4">
+  <p class="text-sm text-slate-500">
+    <span class="font-semibold text-slate-700">{{ apps|length }}</span> application(s)
+  </p>
+</div>
+
+{% if apps %}
+<div class="space-y-4">
+  {% for app in apps %}
+  {% set t = app.trainees or {} %}
+  {% set p = t.profiles or {} %}
+  {% set job = app.job_postings or {} %}
+  <div class="card p-5">
+    <div class="flex flex-col sm:flex-row items-start gap-4">
+
+      <!-- Trainee avatar -->
+      <div class="flex-shrink-0">
+        {% if p.profile_photo_url %}
+          <img src="{{ p.profile_photo_url }}" class="w-12 h-12 rounded-xl object-cover" alt="">
+        {% else %}
+          <div class="w-12 h-12 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-lg">
+            {{ p.full_name[0]|upper if p.full_name else '?' }}
+          </div>
+        {% endif %}
+      </div>
+
+      <!-- Details -->
+      <div class="flex-1 min-w-0">
+        <div class="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <p class="font-bold text-slate-800">{{ p.full_name or 'Unknown Trainee' }}</p>
+            <p class="text-xs text-slate-500">
+              {{ (t.departments or {}).name or '' }}
+              {% if (t.courses or {}).name %} &bull; {{ (t.courses or {}).name }}{% endif %}
+              {% if t.admission_number %} &bull; {{ t.admission_number }}{% endif %}
+            </p>
+          </div>
+          <span class="badge text-xs
+            {% if app.status == 'accepted' %}bg-emerald-100 text-emerald-700
+            {% elif app.status == 'shortlisted' %}bg-blue-100 text-blue-700
+            {% elif app.status == 'rejected' %}bg-red-100 text-red-700
+            {% elif app.status == 'reviewed' %}bg-violet-100 text-violet-700
+            {% else %}bg-amber-100 text-amber-700{% endif %} capitalize flex-shrink-0">
+            {{ app.status }}
+          </span>
+        </div>
+
+        <p class="text-xs text-slate-500 mt-1">
+          <i class="fas fa-briefcase mr-1 text-slate-400"></i>
+          Applied for: <span class="font-medium text-slate-700">{{ job.title or 'Unknown' }}</span>
+          <span class="ml-2 text-slate-400">{{ app.applied_at[:10] if app.applied_at else '' }}</span>
+        </p>
+
+        {% if app.cover_note %}
+        <div class="mt-2 p-3 bg-slate-50 rounded-xl">
+          <p class="text-xs font-semibold text-slate-600 mb-1">Cover Note:</p>
+          <p class="text-xs text-slate-600 italic">{{ app.cover_note }}</p>
+        </div>
+        {% endif %}
+
+        <!-- Actions -->
+        <div class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-slate-50">
+          {% if t.id %}
+          <a href="{{ url_for('portfolio.view', trainee_id=t.id) }}"
+             class="btn-secondary text-xs" target="_blank">
+            <i class="fas fa-briefcase"></i> View Portfolio
+          </a>
+          {% endif %}
+          {% if p.email %}
+          <a href="mailto:{{ p.email }}" class="btn-secondary text-xs">
+            <i class="fas fa-envelope"></i> Email
+          </a>
+          {% endif %}
+
+          <!-- Status update form -->
+          <form method="POST"
+                action="{{ url_for('employer.update_application', app_id=app.id) }}"
+                class="flex items-center gap-2 ml-auto">
+            <select name="status" class="form-input text-xs py-1.5 pr-7">
+              {% for s in ['pending','reviewed','shortlisted','accepted','rejected'] %}
+              <option value="{{ s }}" {% if app.status == s %}selected{% endif %} class="capitalize">
+                {{ s|capitalize }}
+              </option>
+              {% endfor %}
+            </select>
+            <button type="submit" class="btn-primary text-xs py-1.5">
+              <i class="fas fa-save"></i> Update
+            </button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+  {% endfor %}
+</div>
+
+{% else %}
+<div class="text-center py-20 text-slate-400">
+  <i class="fas fa-inbox text-5xl mb-4 opacity-20"></i>
+  <p class="text-base font-medium">No applications yet</p>
+  <p class="text-sm mt-1">Applications from trainees will appear here once they apply to your job postings.</p>
+  <a href="{{ url_for('employer.post_job') }}" class="btn-primary mt-4 inline-flex">
+    <i class="fas fa-plus"></i> Post a Job
+  </a>
+</div>
+{% endif %}
+
+{% endblock %}

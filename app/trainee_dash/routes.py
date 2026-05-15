@@ -395,3 +395,28 @@ def my_portfolio():
     if not trainee:
         return _trainee_not_found()
     return redirect(url_for('portfolio.view', trainee_id=trainee['id']))
+
+
+# ─────────────────────────────────────────────
+# My Job Applications
+# ─────────────────────────────────────────────
+
+@trainee_dash.route('/applications')
+@trainee_required
+def my_applications():
+    user = session.get('user')
+    trainee = _get_trainee(user['id'])
+    if not trainee:
+        return _trainee_not_found()
+
+    applications = []
+    try:
+        sb = get_supabase_admin()
+        applications = sb.table('job_applications').select(
+            '*, job_postings(title, type, location, deadline, employers(company_name, location))'
+        ).eq('trainee_id', trainee['id']).order('applied_at', desc=True).execute().data or []
+    except Exception:
+        pass
+
+    return render_template('trainee_dash/my_applications.html',
+                           user=user, trainee=trainee, applications=applications)
